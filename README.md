@@ -10,6 +10,9 @@ to finite state machines.
 
 ## High level interface
 
+The high level interface implicitly caches and compiles regular expressions,
+specialised to its input vectors. 
+
 `(all-matches regular-expression vector &key start end)` returns a list of all
 `(start end)`s of each match found.
 
@@ -28,17 +31,12 @@ match or `NIL`.
 tries to find a match starting from `start`, returning the end position or NIL.
 
 ```lisp
-CL-USER> (use-package :one-more-re-nightmare)
-T
-CL-USER> (defvar *regexp* (either (join (literal (symbol-set 'a))
-                                        (literal (symbol-set 'b)))
-                                  (join (literal (symbol-set 'a))
-                                        (literal (symbol-set 'c)))))
+CL-USER> (defvar *regexp* (either (text "ab")
+                                  (text "ac")))
 *REGEXP*
-
-CL-USER> (interpret-regular-expression *regexp* #(a b c))
+CL-USER> (interpret-regular-expression *regexp* "abc")
 2
-CL-USER> (interpret-regular-expression *regexp* #(b b c))
+CL-USER> (interpret-regular-expression *regexp* "bbc")
 NIL
 ```
 

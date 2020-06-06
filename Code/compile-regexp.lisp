@@ -13,7 +13,10 @@
 
 (defun add-code (compiler-state expression code)
   (setf (gethash expression (compiler-state-table compiler-state))
-        (make-node :code code)))
+        (make-node :code code
+                   :label (make-symbol
+                           (with-standard-io-syntax
+                             (princ-to-string expression))))))
 
 (defun label-for-expression (state regular-expression)
   "Returns the label name for a regular expression."
@@ -41,8 +44,15 @@
 (defun make-lambda-form (regular-expression &key (vector-type 'vector))
   "Make a LAMBDA form that can be compiled to a function that matches the regular expression to vectors of VECTOR-TYPE."
   (let ((compiler-state (make-compiler-state)))
-    (add-code compiler-state (empty-string) '(return (funcall continuation this-start position)))
-    (add-code compiler-state (empty-set) '(return nil))
+    (add-code compiler-state (empty-string)
+              '(progn
+                 (funcall continuation this-start position)
+                 (setf this-start position)
+                 (go loop)))
+    (add-code compiler-state (empty-set)
+              '(progn
+                 (incf this-start)
+                 (go loop)))
     `(lambda (vector start end continuation)
        (declare (optimize (speed 3) (safety 1)
                           (debug 0))
@@ -51,13 +61,19 @@
                 #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
        (macrolet ((next-value (nullable?)
                     `(if (>= position end)
-                         (return ,(if nullable?
-                                      'position
-                                      'nil))
+                         ,(if nullable?
+                              '(progn (funcall continuation this-start end)
+                                 (return))
+                              '(return))
                          (prog1 (aref vector position)
                            (incf position)))))
-         (loop for this-start of-type fixnum from start below end
-               do (prog ((position this-start))
-                     (go ,(label-for-expression compiler-state regular-expression))
-                     ,@(loop for node being the hash-values of (compiler-state-table compiler-state)
-                             appending `(,(node-label node) ,(node-code node)))))))))
+         (prog* ((this-start start)
+                 (position this-start))
+          loop
+            (when (= this-start end)
+              (return))
+            (setf position this-start)
+            (go ,(label-for-expression compiler-state regular-expression))
+            ,@(loop for node being the hash-values of (compiler-state-table compiler-state)
+                    appending `(,(node-label node) ,(node-code node)))
+            (error "FSM shouldn't end up here."))))))

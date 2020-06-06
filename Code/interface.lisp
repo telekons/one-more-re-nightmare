@@ -27,7 +27,7 @@
         (matches '()))
     (funcall function vector start end (lambda (start end)
                                          (push (list start end) matches)))
-    matches))
+    (nreverse matches)))
 
 (defun all-string-matches (regular-expression vector
                            &key (start 0) (end (length vector)))

@@ -68,7 +68,7 @@
   (:method ((set positive-symbol-set))
     (make-instance 'negative-symbol-set :elements (elements set)))
   (:method ((set negative-symbol-set))
-    (make-instance 'negative-symbol-set :elements (elements set))))
+    (make-instance 'positive-symbol-set :elements (elements set))))
 
 (defgeneric set-null (set)
   (:method ((set negative-symbol-set)) nil)

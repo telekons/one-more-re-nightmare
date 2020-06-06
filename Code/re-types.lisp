@@ -36,6 +36,8 @@
              :hash-cons (((both r s) (both s r))))
 (define-type (invert r)
              :simplify (((invert (invert r)) r)
+                        ((invert (literal set))
+                         (literal (set-inverse set)))
                         ((invert (empty-string)) (empty-set))))
 
 (defun text (vector)
