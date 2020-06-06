@@ -8,12 +8,24 @@ Thanks to Gilbert Baumann for suggesting I use derivatives to compile regular
 expressions, and my discrete mathematics teachers for properly introducing me
 to finite state machines.
 
-## Examples
+## High level interface
 
-`INTERPRET-REGULAR-EXPRESSION` and the functions created by 
-`COMPILE-REGULAR-EXPRESSION` both take a `vector` argument, and an optional
-`start` keyword argument (which defaults to `0`), and return either `NIL` if no
-match was found, or the end of the match if a match was found.
+`(all-matches regular-expression vector &key start end)` returns a list of all
+`(start end)`s of each match found.
+
+`all-string-matches` takes the same arguments and returns a list of all 
+subsequences matching.
+
+`(first-match regular-expression vector &key start end)` returns the start and 
+end of the first match as multiple values, or two `NIL`s if no match was found.
+
+`first-match` takes the same arguments and returns a subsequence of the first 
+match or `NIL`.
+
+## Low level interface
+
+`(interpret-regular-expression regular-expression vector &key (start 0))` 
+tries to find a match starting from `start`, returning the end position or NIL.
 
 ```lisp
 CL-USER> (use-package :one-more-re-nightmare)
@@ -28,12 +40,12 @@ CL-USER> (interpret-regular-expression *regexp* #(a b c))
 2
 CL-USER> (interpret-regular-expression *regexp* #(b b c))
 NIL
-
-CL-USER> (compile-regular-expression *regexp*)
-#<FUNCTION (LAMBDA (VECTOR &KEY :START)) {52D1DF1B}>
-CL-USER> (funcall * #(a b c))
-2
 ```
+
+`(compile-regular-expression regular-expression &key vector-type)` compiles a
+regular expression into a function that takes arguments 
+`(vector start end continuation)`, calling `continuation` with each start and
+end of each match in the `vector` between `start` and `end`.
 
 ## Language
 
