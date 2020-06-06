@@ -32,6 +32,12 @@
       (setf (gethash initargs *negatives*)
             (call-next-method))))
 
+(defun symbol-set (&rest elements)
+  (make-instance 'positive-symbol-set :elements elements))
+
+(defun set-equal (set1 set2)
+  (null (set-exclusive-or set1 set2)))
+
 (defgeneric set-union (set1 set2)
   (:method ((set1 positive-symbol-set) (set2 positive-symbol-set))
     (make-instance 'positive-symbol-set
@@ -74,12 +80,6 @@
   (:method ((set negative-symbol-set)) nil)
   (:method ((set positive-symbol-set))
     (null (elements set))))
-
-(defun symbol-set (&rest elements)
-  (make-instance 'positive-symbol-set :elements elements))
-
-(defun set-equal (set1 set2)
-  (null (set-exclusive-or set1 set2)))
 
 (defgeneric symbol-set-equal (set1 set2)
   (:method (s1 s2) nil)

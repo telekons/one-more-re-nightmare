@@ -38,8 +38,8 @@
                ,@(loop for class in classes
                        for derivative = (derivative regular-expression class)
                        unless (set-null class)
-                       collect `(,(make-test-form class 'value)
-                                 (go ,(label-for-expression state derivative)))))))))
+                         collect `(,(make-test-form class 'value)
+                                   (go ,(label-for-expression state derivative)))))))))
 
 (defun make-lambda-form (regular-expression &key (vector-type 'vector))
   "Make a LAMBDA form that can be compiled to a function that matches the regular expression to vectors of VECTOR-TYPE."
