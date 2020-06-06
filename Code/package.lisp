@@ -1,5 +1,5 @@
 (defpackage :one-more-re-nightmare
   (:use :cl)
-  (:export #:literal #:empty #:concatenate #:kleene #:either #:join #:complement
-           #:symbol-set
+  (:export #:literal #:concatenate #:kleene #:either #:join #:invert
+           #:symbol-set #:empty-set #:empty-string
            #:compile-regular-expression #:interpret-regular-expression))
