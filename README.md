@@ -51,17 +51,36 @@ end of each match in the `vector` between `start` and `end`.
 
 The following expressions can be used:
 
-| Regular expression | o-m-r-n constructor      |
-|--------------------|--------------------------|
-| ε                  | (empty-string)           |
-| ∅                  | (empty-set)              |
-| r*                 | (kleene r)               |
-| r + s              | (either r s)             |
-| r s                | (join r s)               |
-| ¬r                 | (invert r)               |
-| r & s              | (both r s)               |
-| A                  | (literal (symbol-set A)) |
+| Regular expression | o-m-r-n constructor |
+|--------------------|---------------------|
+| ε                  | (empty-string)      |
+| ∅                  | (empty-set)         |
+| r*                 | (kleene r)          |
+| r + s              | (either r s)        |
+| r s                | (join r s)          |
+| ¬r                 | (invert r)          |
+| r & s              | (both r s)          |
+| ABC                | (text "ABC")        |
 
 
 As specified by the paper, these constructors perform some simplification and 
 hash-consing, allowing regular expressions to be compared with `eq`.
+
+## A lousy benchmark
+
+```lisp
+CL-USER> (let ((s (make-string 1000000 :initial-element #\a)))
+           (setf (aref s 333333) #\b)
+           (setf (aref s 555555) #\c)
+           (the-cost-of-nothing:bench
+            (all-string-matches (either (text "AB") (text "AC"))
+                                s)))
+3.96 milliseconds
+
+CL-USER> (let ((s (make-string 1000000 :initial-element #\a)))
+           (setf (aref s 333333) #\b)
+           (setf (aref s 555555) #\c)
+           (the-cost-of-nothing:bench
+            (cl-ppcre:all-matches-as-strings "ab|ac" s)))
+22.82 milliseconds
+```

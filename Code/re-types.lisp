@@ -7,6 +7,7 @@
 (trivia:defpattern empty-set ()
   `(trivia:guard (literal set)
                  (set-null set)))
+
 (define-type (empty-string)) ;; ε
 (define-type (join r s)
              :simplify (((join (empty-set) _) (empty-set))
@@ -36,3 +37,10 @@
 (define-type (invert r)
              :simplify (((invert (invert r)) r)
                         ((invert (empty-string)) (empty-set))))
+
+(defun text (vector)
+  (reduce #'join (map 'vector (lambda (e)
+                                (literal (symbol-set e)))
+                      vector)
+          :initial-value (empty-string) 
+          :from-end t))
