@@ -1,6 +1,7 @@
 (in-package :one-more-re-nightmare)
 
 (defun derivative (re set)
+  "Compute the derivative of a regular expression with regards to the set (i.e. the regular expression should be matched after a character in the set is matched)."
   (trivia:ematch re
     ((empty-string) (empty-set))
     ((literal matching-set)

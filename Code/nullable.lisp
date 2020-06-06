@@ -1,6 +1,7 @@
 (in-package :one-more-re-nightmare)
 
 (trivia:defun-ematch nullable (re)
+  "Could the regular expression match an empty string?"
   ((empty-string) t)
   ((literal set)  (set-null set))
   ((join r s)     (and (nullable r) (nullable s)))

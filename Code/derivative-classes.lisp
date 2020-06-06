@@ -1,11 +1,13 @@
 (in-package :one-more-re-nightmare)
 
 (defun merge-sets (sets1 sets2)
+  "Produce a list of every subset of sets1 and sets2."
   (remove-duplicates 
    (alexandria:map-product #'set-intersection sets1 sets2)
    :test #'symbol-set-equal))
 
 (defun derivative-classes (re)
+  "Produce a list of the 'classes' (sets) of characters that compiling the regular expression would have to dispatch on."
   (trivia:ematch re
     ((literal set)  (list set (set-inverse set)))
     ((empty-string) (list (make-instance 'negative-symbol-set :elements '())))
