@@ -71,9 +71,9 @@ CL-USER> (let ((s (make-string 1000000 :initial-element #\a)))
            (setf (aref s 333333) #\b)
            (setf (aref s 555555) #\c)
            (the-cost-of-nothing:bench
-            (all-string-matches (either (text "AB") (text "AC"))
+            (all-string-matches (either (text "ab") (text "ab"))
                                 s)))
-3.96 milliseconds
+7.99 milliseconds
 
 CL-USER> (let ((s (make-string 1000000 :initial-element #\a)))
            (setf (aref s 333333) #\b)
