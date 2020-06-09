@@ -52,6 +52,7 @@
                                           ,(go-to-state-form state regular-expression derivative)))))
              ,(go-to-state-form state regular-expression (empty-set))))))
 
+
 (defun make-lambda-form (regular-expression &key (vector-type 'vector))
   "Make a LAMBDA form that can be compiled to a function that matches the regular expression to vectors of VECTOR-TYPE."
   (let ((compiler-state (make-compiler-state)))
@@ -59,7 +60,7 @@
               '(progn
                 (funcall continuation this-start position)
                 (if (= this-start position)
-                    (setf this-start (1+ position))
+                    (incf this-start)
                     (setf this-start position))
                 (go loop)))
     (add-code compiler-state (empty-set)
@@ -67,14 +68,13 @@
                 (incf this-start)
                 (go loop)))
     `(lambda (vector start end continuation)
-       (declare (optimize (speed 3) (safety 1)
+       (declare (optimize (speed 3) (safety 0)
                           (debug 0) (space 0)
                           (compilation-speed 0))
                 (function continuation)
                 (,vector-type vector)
-                ((and fixnum (integer 0 *)) start end)
-                (ignorable start end vector)
-                #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
+                (fixnum start end)
+                (ignorable start end vector))
        (macrolet ((with-next-value ((value succeed-body)
                                     fail-body)
                     `(if (>= position end)

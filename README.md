@@ -89,5 +89,5 @@ CL-USER> (let ((s (make-string 1000000 :initial-element #\a)))
 
 | engine   | SBCL   | Clozure CL | ECL    | ABCL   |
 |----------|--------|------------|--------|--------|
-| o-m-r-n  | 7.75ms | 9.68ms     | 55.7ms | 4.85ms |
+| o-m-r-n  | 1.78ms | 3.53ms     | 55.7ms | 4.69ms |
 | cl-ppcre | 22.8ms | 40.1ms     | 225ms  | 239ms  |

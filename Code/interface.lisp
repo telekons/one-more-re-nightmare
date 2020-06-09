@@ -17,7 +17,8 @@
          (table (find-regular-expression-table type)))
     (or (gethash regular-expression table)
         (setf (gethash regular-expression table)
-              (compile-regular-expression regular-expression)))))
+              (compile-regular-expression regular-expression
+                                          :vector-type type)))))
 
 (defun all-matches (regular-expression vector
                     &key (start 0) (end (length vector)))
