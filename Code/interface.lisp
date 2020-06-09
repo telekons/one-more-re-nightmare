@@ -10,7 +10,7 @@
 (defun find-regular-expression-table (type)
   (or (gethash type *compiled-regexps*)
       (setf (gethash type *compiled-regexps*)
-            (make-hash-table :test 'eq))))
+            (make-hash-table :test 'equal))))
 
 (defun find-compiled-regular-expression (regular-expression vector)
   (let* ((type  (vector-expression-type vector))

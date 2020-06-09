@@ -32,7 +32,9 @@
              :simplify (((both r s)
                          (if (eq r s)
                              r
-                             (trivia.next:next))))
+                             (trivia.next:next)))
+                        ((both (literal s1) (literal s2))
+                         (literal (set-intersection s1 s2))))
              :hash-cons (((both r s) (both s r))))
 (define-type (invert r)
              :simplify (((invert (invert r)) r)
