@@ -9,6 +9,12 @@
 (esrap:defrule special-character
     (or "(" ")" "¬" "~" "|" "&" "*" "∑" "$" "+"))
 
+#|
+(expression*)
+under-both   & under-both
+under-either | under-either
+|#
+
 (esrap:defrule literal
     (* (or escaped-character (not special-character)))
   (:destructure (&rest characters)
@@ -33,13 +39,13 @@
     (join expression (kleene expression))))
 
 (esrap:defrule either
-    (and expression "|" expression)
+    (and under-either "|" under-either)
   (:destructure (e1 bar e2)
     (declare (ignore bar))
     (either e1 e2)))
 
 (esrap:defrule both
-    (and expression "&" expression)
+    (and under-both "&" under-both)
   (:destructure (e1 bar e2)
     (declare (ignore bar))
     (both e1 e2)))
@@ -57,11 +63,14 @@
 (esrap:defrule expression*
     (or parens invert universal-set literal))
 
+(esrap:defrule under-either
+    (or plus kleene expression*))
+
+(esrap:defrule under-both
+    (or either under-either))
+
 (esrap:defrule expression
-    (or either
-        both
-        plus kleene
-        expression*))
+    (or both under-both))
 
 (esrap:defrule two-expressions
     (and expression expressions)
