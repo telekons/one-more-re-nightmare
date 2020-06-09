@@ -7,7 +7,7 @@
     char))
 
 (esrap:defrule special-character
-    (or "(" ")" "¬" "~" "|" "&" "*" "∑" "$"))
+    (or "(" ")" "¬" "~" "|" "&" "*" "∑" "$" "+"))
 
 (esrap:defrule literal
     (* (or escaped-character (not special-character)))
@@ -25,6 +25,12 @@
   (:destructure (expression star)
     (declare (ignore star))
     (kleene expression)))
+
+(esrap:defrule plus
+    (and expression "+")
+  (:destructure (expression plus)
+    (declare (ignore plus))
+    (join expression (kleene expression))))
 
 (esrap:defrule either
     (and expression "|" expression)
@@ -54,7 +60,7 @@
 (esrap:defrule expression
     (or either
         both
-        kleene
+        plus kleene
         expression*))
 
 (esrap:defrule two-expressions

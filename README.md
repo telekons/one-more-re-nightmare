@@ -56,6 +56,7 @@ The following expressions can be used:
 | ∑                  | (universal-set)     | ∑ or $        |
 | r*                 | (kleene r)          | R*            |
 | r + s              | (either r s)        | R\|S          |
+|                    | (join r (kleene r)) | R+            |
 | r s                | (join r s)          | RS            |
 | ¬r                 | (invert r)          | ¬R or `R      |
 | r & s              | (both r s)          | R&S           |
@@ -78,12 +79,15 @@ CL-USER> (let ((s (make-string 1000000 :initial-element #\a)))
            (the-cost-of-nothing:bench
             (all-string-matches (either (text "ab") (text "ab"))
                                 s)))
-7.75 milliseconds
 
 CL-USER> (let ((s (make-string 1000000 :initial-element #\a)))
            (setf (aref s 333333) #\b)
            (setf (aref s 555555) #\c)
            (the-cost-of-nothing:bench
             (cl-ppcre:all-matches-as-strings "ab|ac" s)))
-22.82 milliseconds
 ```
+
+| engine   | SBCL   | Clozure CL | ECL    | ABCL   |
+|----------|--------|------------|--------|--------|
+| o-m-r-n  | 7.75ms | 9.68ms     | 55.7ms | 4.85ms |
+| cl-ppcre | 22.8ms | 40.1ms     | 225ms  | 239ms  |
