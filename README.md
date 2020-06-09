@@ -49,20 +49,25 @@ end of each match in the `vector` between `start` and `end`.
 
 The following expressions can be used:
 
-| Regular expression | o-m-r-n constructor |
-|--------------------|---------------------|
-| ε                  | (empty-string)      |
-| ∅                  | (empty-set)         |
-| r*                 | (kleene r)          |
-| r + s              | (either r s)        |
-| r s                | (join r s)          |
-| ¬r                 | (invert r)          |
-| r & s              | (both r s)          |
-| ABC                | (text "ABC")        |
+| Regular expression | o-m-r-n constructor | string syntax |
+|--------------------|---------------------|---------------|
+| ε                  | (empty-string)      |               |
+| ∅                  | (empty-set)         |               |
+| ∑                  | (universal-set)     | ∑ or $        |
+| r*                 | (kleene r)          | R*            |
+| r + s              | (either r s)        | R\|S          |
+| r s                | (join r s)          | RS            |
+| ¬r                 | (invert r)          | ¬R or `R      |
+| r & s              | (both r s)          | R&S           |
+| ABC                | (text "ABC")        | ABC           |
 
 
 As specified by the paper, these constructors perform some simplification and 
 hash-consing, allowing regular expressions to be compared with `eq`.
+
+`¬R` binds tighter than `R*`, so `¬R*` parses as `(kleene (invert R))`.
+`R|S` also binds tighter than `R&S`, so `A|B&C|D` parses as 
+`(both (join A B) (join C D))`.
 
 ## A lousy benchmark
 

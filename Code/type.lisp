@@ -4,16 +4,16 @@
 
 (defmacro define-type ((name &rest slots) &key simplify hash-cons)
   (let ((variables (loop for slot in slots collect (gensym (symbol-name slot))))
-        (internal-creator (alexandria:format-symbol nil "%~a" name))
-        (instance-name (gensym "INSTANCE")))
+        (internal-creator (alexandria:format-symbol nil "%~a" name)))
     `(progn
        (defclass ,name () ,slots)
        (trivia:defpattern ,name ,variables
-          (list 'trivia:guard1 (list ',instance-name ':type ',name)
-                (list 'typep ',instance-name '',name)
+          (alexandria:with-gensyms (instance-name)
+            (list 'trivia:guard1 (list instance-name ':type ',name)
+                (list 'typep instance-name '',name)
                ,@(loop for slot in slots
                        for variable in variables
-                       appending `('(slot-value ,instance-name ',slot) ,variable))))
+                       appending `((list 'slot-value instance-name '',slot) ,variable)))))
        (setf (gethash ',name *instances*)
              (trivial-garbage:make-weak-hash-table :weakness :value
                                                    :test 'equal))

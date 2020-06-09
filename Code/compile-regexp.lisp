@@ -80,6 +80,7 @@
                     `(if (>= position end)
                          ,fail-body
                          (let ((,value (aref vector position)))
+                           (declare (ignorable ,value))
                            ,succeed-body))))
          (prog* ((this-start start)
                  (position this-start))

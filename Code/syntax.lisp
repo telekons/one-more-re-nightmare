@@ -7,7 +7,7 @@
     char))
 
 (esrap:defrule special-character
-    (or "(" ")" "¬" "~" "|" "&" "*"))
+    (or "(" ")" "¬" "~" "|" "&" "*" "∑" "$"))
 
 (esrap:defrule literal
     (* (or escaped-character (not special-character)))
@@ -44,8 +44,12 @@
     (declare (ignore bar))
     (invert expression)))
 
+(esrap:defrule universal-set
+    (or "∑" "$")
+  (:constant (universal-set)))
+
 (esrap:defrule expression*
-    (or parens invert literal))
+    (or parens invert universal-set literal))
 
 (esrap:defrule expression
     (or either
