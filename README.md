@@ -27,19 +27,6 @@ match or `NIL`.
 
 ## Low level interface
 
-`(interpret-regular-expression regular-expression vector &key (start 0))` 
-tries to find a match starting from `start`, returning the end position or NIL.
-
-```lisp
-CL-USER> (defvar *regexp* (either (text "ab")
-                                  (text "ac")))
-*REGEXP*
-CL-USER> (interpret-regular-expression *regexp* "abc")
-2
-CL-USER> (interpret-regular-expression *regexp* "bbc")
-NIL
-```
-
 `(compile-regular-expression regular-expression &key vector-type)` compiles a
 regular expression into a function that takes arguments 
 `(vector start end continuation)`, calling `continuation` with each start and
