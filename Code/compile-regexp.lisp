@@ -33,7 +33,7 @@
 (defun go-to-state-form (compiler-state current-state next-state)
   (if (and (nullable current-state) (eq (empty-set) next-state))
       `(progn
-         (go ,(label-for-expression compiler-state 'nullable-empty-string)))
+         (go ,(label-for-expression compiler-state (empty-string))))
       `(progn
          (incf position)
          (go ,(label-for-expression compiler-state next-state)))))
@@ -58,11 +58,6 @@
     (add-code compiler-state (empty-string)
               '(progn
                 (funcall continuation this-start position)
-                (setf this-start position)
-                (go loop)))
-    (add-code compiler-state 'nullable-empty-string
-              '(progn
-                (funcall continuation this-start position)
                 (if (= this-start position)
                     (setf this-start (1+ position))
                     (setf this-start position))
@@ -73,9 +68,12 @@
                 (go loop)))
     `(lambda (vector start end continuation)
        (declare (optimize (speed 3) (safety 1)
-                          (debug 0))
+                          (debug 0) (space 0)
+                          (compilation-speed 0))
+                (function continuation)
                 (,vector-type vector)
                 ((and fixnum (integer 0 *)) start end)
+                (ignorable start end vector)
                 #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
        (macrolet ((with-next-value ((value succeed-body)
                                     fail-body)
@@ -96,5 +94,4 @@
             (go ,(label-for-expression compiler-state regular-expression))
             ,@(loop for node being the hash-values of (compiler-state-table compiler-state)
                     appending `(,(node-label node)
-                                ,(node-code node)))
-            (error "FSM shouldn't end up here."))))))
+                                ,(node-code node))))))))
