@@ -60,6 +60,8 @@
                         ((invert (literal set))
                          (literal (set-inverse set)))
                         ((invert (empty-string)) (empty-set))))
+(define-type (start-group n))
+(define-type (end-group n))
 
 (defun text (vector)
   (reduce #'join (map 'vector (lambda (e)

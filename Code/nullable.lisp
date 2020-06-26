@@ -2,7 +2,10 @@
 
 (trivia:defun-ematch nullable (re)
   "Could the regular expression match an empty string?"
-  ((empty-string) t)
+  ((or (empty-string)
+       (start-group _)
+       (end-group _))
+   t)
   ((literal set)  (set-null set))
   ((join r s)     (and (nullable r) (nullable s)))
   ((either r s)   (or  (nullable r) (nullable s)))

@@ -6,6 +6,7 @@
                (:file "sets")
                (:file "re-types")
                (:file "nullable")
+               (:file "prefix")
                (:file "derivative")
                (:file "derivative-classes")
                (:file "syntax")

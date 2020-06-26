@@ -10,7 +10,10 @@
   "Produce a list of the 'classes' (sets) of characters that compiling the regular expression would have to dispatch on."
   (trivia:ematch re
     ((literal set)  (list set (set-inverse set)))
-    ((empty-string) (list (make-instance 'negative-symbol-set :elements '())))
+    ((or (empty-string)
+         (start-group _)
+         (end-group _))
+     (list (make-instance 'negative-symbol-set :elements '())))
     ((join r s)
      (if (nullable r)
          (merge-sets (derivative-classes r)
