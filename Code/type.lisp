@@ -32,7 +32,7 @@
                    collect `((list ,@pattern) ,replacement))
            ,@(loop for ((nil . pattern) (nil . replacement)) in hash-cons
                    collect `((list ,@pattern)
-                             (or (gethash (list ,@pattern)
+                             (or (gethash (list ,@replacement)
                                           (gethash ',name *instances*))
                                  (trivia.next:next))))
            (_ (or (gethash (list ,@slots)

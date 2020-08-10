@@ -68,8 +68,7 @@ CL-USER> (let ((s (make-string 1000000 :initial-element #\a)))
            (setf (aref s 333333) #\b)
            (setf (aref s 555555) #\c)
            (the-cost-of-nothing:bench
-            (all-string-matches (either (text "ab") (text "ab"))
-                                s)))
+            (all-string-matches "ab|ac" s)))
 
 CL-USER> (let ((s (make-string 1000000 :initial-element #\a)))
            (setf (aref s 333333) #\b)
@@ -80,5 +79,5 @@ CL-USER> (let ((s (make-string 1000000 :initial-element #\a)))
 
 | engine   | SBCL   | Clozure CL | ECL    | ABCL   |
 |----------|--------|------------|--------|--------|
-| o-m-r-n  | 1.78ms | 3.53ms     | 55.7ms | 4.69ms |
+| o-m-r-n  | 2.59ms | 3.78ms     | 1.83ms | 5.83ms |
 | cl-ppcre | 22.8ms | 40.1ms     | 225ms  | 239ms  |
