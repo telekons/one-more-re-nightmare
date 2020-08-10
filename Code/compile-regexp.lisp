@@ -67,15 +67,17 @@
             appending `(,start 0 ,end 0 ,valid? nil))))
 
 (defun groups-list (state)
-  `(remove nil
-           (list
-            ,@(loop with table = (compiler-state-variable-table state)
-                    for index in (sort (alexandria:hash-table-keys table)
-                                       #'<)
-                    for (start end valid?) = (gethash index table)
-                    collect `(if ,valid?
-                                 (list ,index ,start ,end)
-                                 nil)))))
+  (if (zerop (hash-table-count (compiler-state-variable-table state)))
+      ''()
+      `(remove nil
+               (list
+                ,@(loop with table = (compiler-state-variable-table state)
+                        for index in (sort (alexandria:hash-table-keys table)
+                                           #'<)
+                        for (start end valid?) = (gethash index table)
+                        collect `(if ,valid?
+                                     (list ,index ,start ,end)
+                                     nil))))))
 
 (defun generate-effect-code (state effect)
   (trivia:ematch effect

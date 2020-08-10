@@ -35,7 +35,7 @@
                            &key (start 0) (end (length vector)))
   (let ((matches (all-matches regular-expression vector
                               :start start :end end)))
-    (loop for (start end) in matches
+    (loop for (start end . nil) in matches
           collect (subseq vector start end))))
 
 (defun first-match (regular-expression vector
