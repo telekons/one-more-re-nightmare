@@ -51,6 +51,7 @@ The following expressions can be used:
 | ¬r                 | (invert r)          | ¬R or `R      |
 | r & s              | (both r s)          | R&S           |
 | ABC                | (text "ABC")        | ABC           |
+|                    | (group r n)         | «R»           |
 
 
 As specified by the paper, these constructors perform some simplification and 
