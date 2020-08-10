@@ -9,6 +9,7 @@
                (:file "prefix")
                (:file "derivative")
                (:file "derivative-classes")
+               (:file "effects")
                (:file "syntax")
                (:file "compile-regexp")
                (:file "interface")))

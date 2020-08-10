@@ -26,8 +26,9 @@
   (let ((function (find-compiled-regular-expression regular-expression
                                                     vector))
         (matches '()))
-    (funcall function vector start end (lambda (start end)
-                                         (push (list start end) matches)))
+    (funcall function vector start end
+             (lambda (start end submatches)
+               (push (list* start end submatches) matches)))
     (nreverse matches)))
 
 (defun all-string-matches (regular-expression vector

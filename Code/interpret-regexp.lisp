@@ -11,7 +11,7 @@
       (when (eq current-expression (empty-string))
         (return-from interpret-regular-expression position))
       (when (eq current-expression (empty-set))
-        (return-from interpret-regular-expression nil))
+        (return-from interpret-regular-expression))
       (when (>= position end)
         (return-from interpret-regular-expression
           (if (nullable current-expression)

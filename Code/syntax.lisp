@@ -1,5 +1,10 @@
 (in-package :one-more-re-nightmare)
 
+(defvar *next-group*)
+(defun next-group ()
+  (prog1 *next-group*
+    (incf *next-group*)))
+
 (esrap:defrule escaped-character
     (and #\\ character)
   (:destructure (backslash char)
@@ -7,9 +12,10 @@
     char))
 
 (esrap:defrule special-character
-    (or "(" ")" "¬" "~" "|" "&" "*" "∑" "$" "+"))
+    (or "(" ")" "«" "»" "¬" "~" "|" "&" "*" "∑" "$" "+"))
 
 #|
+«expression*»
 (expression*)
 under-both   & under-both
 under-either | under-either
@@ -25,6 +31,15 @@ under-either | under-either
   (:destructure (left expression right)
     (declare (ignore left right))
     expression))
+
+(esrap:defrule match-group
+    (and "«" expressions "»")
+  (:destructure (left expression right)
+    (declare (ignore left right))
+    (let ((group-number (next-group)))
+      (join (start-group group-number)
+            (join expression
+                  (end-group group-number))))))
 
 (esrap:defrule kleene
     (and expression "*")
@@ -61,7 +76,7 @@ under-either | under-either
   (:constant (universal-set)))
 
 (esrap:defrule expression*
-    (or parens invert universal-set literal))
+    (or match-group parens invert universal-set literal))
 
 (esrap:defrule under-either
     (or plus kleene expression*))
@@ -81,4 +96,5 @@ under-either | under-either
     (or two-expressions expression))
 
 (defun parse-regular-expression (string)
-  (esrap:parse 'expressions string))
+  (let ((*next-group* 1))
+    (esrap:parse 'expressions string)))

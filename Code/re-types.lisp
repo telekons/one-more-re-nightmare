@@ -62,6 +62,10 @@
                         ((invert (empty-string)) (empty-set))))
 (define-type (start-group n))
 (define-type (end-group n))
+(defun group (r n)
+  (join (start-group n)
+        (join r
+              (end-group n))))
 
 (defun text (vector)
   (reduce #'join (map 'vector (lambda (e)
