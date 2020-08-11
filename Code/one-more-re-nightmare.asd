@@ -1,5 +1,5 @@
 (asdf:defsystem :one-more-re-nightmare
-  :depends-on (:trivia :alexandria :trivial-garbage :esrap)
+  :depends-on (:trivia :alexandria :babel :trivial-garbage :esrap)
   :serial t
   :components ((:file "package")
                (:file "type")
@@ -12,4 +12,5 @@
                (:file "effects")
                (:file "syntax")
                (:file "compile-regexp")
+               (:file "convert-to-bytes")
                (:file "interface")))
