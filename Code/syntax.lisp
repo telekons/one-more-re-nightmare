@@ -34,12 +34,12 @@ under-either | under-either
 
 (esrap:defrule match-group
     (and "«" expressions "»")
-  (:destructure (left expression right)
-    (declare (ignore left right))
+  (:around ()
     (let ((group-number (next-group)))
-      (join (start-group group-number)
-            (join expression
-                  (end-group group-number))))))
+      (destructuring-bind (left expressions right)
+          (esrap:call-transform)
+        (declare (ignore left right))
+        (group expressions group-number)))))
 
 (esrap:defrule kleene
     (and expression "*")
