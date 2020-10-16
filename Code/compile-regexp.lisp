@@ -109,56 +109,63 @@
 
 (defun make-lambda-form (regular-expression
                          &key (vector-type 'vector)
-                              (aref-generator (lambda (vector position)
-                                                `(aref ,vector ,position))))
+                           (aref-generator (lambda (vector position)
+                                             `(aref ,vector ,position))))
   "Make a LAMBDA form that can be compiled to a function that matches the regular expression to vectors of VECTOR-TYPE."
-  (let ((compiler-state (make-compiler-state)))
-    ;; We'll put real code in shortly, after we finish producing the DFA and
-    ;; have submatch variable names to include.
-    (add-code compiler-state (empty-string) '((error "bogus")))
-    (add-code compiler-state (empty-set)
-              '((incf this-start)
-                (go loop)))
-    (compile-expression-into-state compiler-state
-                                   regular-expression)
-    (setf (node-code (gethash (empty-string)
-                              (compiler-state-table compiler-state)))
-          `((funcall continuation this-start position
-                     ,(groups-list compiler-state))
-            (if (= this-start position)
-                (incf this-start)
-                (setf this-start position))
-            (go loop)))
-    `(lambda (vector start end continuation)
-       (declare (optimize (speed 3) (safety 0)
-                          (debug 0) (space 0)
-                          (compilation-speed 0))
-                (function continuation)
-                (,vector-type vector)
-                (fixnum start end)
-                (ignorable start end vector))
-       (macrolet ((with-next-value ((value succeed-body)
-                                    fail-body)
-                    `(if (>= position end)
-                         ,fail-body
-                         (let ((,value ,',(funcall aref-generator
-                                                   'vector 'position)))
-                           (declare (ignorable ,value))
-                           ,succeed-body))))
-         (prog* ((this-start start)
-                 (position this-start)
-                 ,@(group-bindings compiler-state))
-            (declare (fixnum position this-start))
-          loop
-            (when (= this-start end)
-              ,(if (nullable regular-expression)
-                   `(funcall continuation this-start end
-                             ,(groups-list compiler-state))
-                   nil)
-              (return))
-            (setf position this-start)
-            ,(reset-group-bindings compiler-state)
-            (go ,(label-for-expression compiler-state regular-expression))
-            ,@(loop for node being the hash-values of (compiler-state-table compiler-state)
-                    appending `(,(node-label node)
-                                ,@(node-code node))))))))
+  (multiple-value-bind (prefix suffix)
+      (prefix regular-expression)
+    (let ((compiler-state (make-compiler-state)))
+      ;; We'll put real code in shortly, after we finish producing the DFA and
+      ;; have submatch variable names to include.
+      (add-code compiler-state (empty-string) '((error "bogus")))
+      (add-code compiler-state (empty-set)
+                `((incf this-start)
+                  (go loop)))
+      (compile-expression-into-state compiler-state
+                                     suffix)
+      (setf (node-code (gethash (empty-string)
+                                (compiler-state-table compiler-state)))
+            `((funcall continuation this-start position
+                       ,(groups-list compiler-state))
+              (if (= this-start position)
+                  (incf this-start)
+                  (setf this-start position))
+              (go loop)))
+      `(lambda (vector start end continuation)
+         (declare (optimize (speed 3) (safety 0)
+                            (debug 0) (space 0)
+                            (compilation-speed 0))
+                  (function continuation)
+                  (,vector-type vector)
+                  (alexandria:array-length start end)
+                  (ignorable start end vector)
+                  #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
+         (block scan
+           (macrolet ((with-next-value ((value succeed-body)
+                                        fail-body)
+                        `(if (>= position end)
+                             ,fail-body
+                             (let ((,value ,',(funcall aref-generator
+                                                       'vector 'position)))
+                               (declare (ignorable ,value))
+                               ,succeed-body))))
+             (prog* ((this-start start)
+                     (position this-start)
+                     ,@(group-bindings compiler-state))
+                (declare (fixnum position this-start))
+              loop
+                ,(boyer-moore-horspool-search-expression 'this-start 'end 'vector
+                                                         prefix
+                                                         aref-generator
+                                                         `(progn
+                                                            ,(if (nullable regular-expression)
+                                                                 `(funcall continuation this-start end
+                                                                           ,(groups-list compiler-state))
+                                                                 (progn))
+                                                            (return-from scan)))
+                (setf position (+ this-start ,(length prefix)))
+                ,(reset-group-bindings compiler-state)
+                (go ,(label-for-expression compiler-state suffix))
+                ,@(loop for node being the hash-values of (compiler-state-table compiler-state)
+                        appending `(,(node-label node)
+                                    ,@(node-code node))))))))))

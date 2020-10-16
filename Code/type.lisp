@@ -40,3 +40,4 @@
                   (setf (gethash (list ,@slots)
                                  (gethash ',name *instances*))
                         (,internal-creator ,@slots)))))))))
+(indent:define-indentation define-type (4 &body))

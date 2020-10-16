@@ -1,5 +1,5 @@
 (asdf:defsystem :one-more-re-nightmare
-  :depends-on (:trivia :alexandria :babel :trivial-garbage :esrap)
+  :depends-on (:trivia :alexandria :babel :trivial-garbage :esrap :trivial-indent)
   :serial t
   :components ((:file "package")
                (:file "type")
@@ -10,6 +10,7 @@
                (:file "derivative")
                (:file "derivative-classes")
                (:file "effects")
+               (:file "boyer-moore-horspool")
                (:file "syntax")
                (:file "compile-regexp")
                (:file "convert-to-bytes")
