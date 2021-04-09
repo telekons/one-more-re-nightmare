@@ -86,10 +86,11 @@
 (defun generate-effect-code (state effect)
   (trivia:ematch effect
     ((start-group n)
-     `(setf ,(group-variable state n :start) position))
+     `(setf ,(group-variable state n :start)  position
+            ,(group-variable state n :end)    position
+            ,(group-variable state n :valid?) t))
     ((end-group n)
-     `(setf ,(group-variable state n :end) position
-            ,(group-variable state n :valid?) position))))
+     `(setf ,(group-variable state n :end) position))))
 
 (defun compile-expression-into-state (state regular-expression)
   "Add code for a regular expression to the compiler state."
