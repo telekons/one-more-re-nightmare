@@ -6,7 +6,7 @@
        (start-group _)
        (end-group _))
    t)
-  ((literal set)  (set-null set))
+  ((literal _)    nil)
   ((join r s)     (and (nullable r) (nullable s)))
   ((either r s)   (or  (nullable r) (nullable s)))
   ((kleene _)     t)

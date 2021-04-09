@@ -44,7 +44,8 @@
   (let ((function (find-compiled-regular-expression regular-expression
                                                     vector)))
     (funcall function vector start end
-             (lambda (start end)
+             (lambda (start end submatches)
+               (declare (ignore submatches))
                (return-from first-match (values start end))))
     (values nil nil)))
 

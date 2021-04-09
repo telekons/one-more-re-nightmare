@@ -64,6 +64,11 @@
           in (compiler-state-variable-table state)
         appending `((,start 0) (,end 0) (,valid? nil))))
 
+(defun group-indexes (state)
+  (loop for (start end valid?) being the hash-values
+          in (compiler-state-variable-table state)
+        appending (list start end)))
+
 (defun reset-group-bindings (state)
   `(setf
     ,@(loop for (start end valid?) being the hash-values
@@ -94,19 +99,21 @@
 
 (defun compile-expression-into-state (state regular-expression)
   "Add code for a regular expression to the compiler state."
-  (let ((classes (derivative-classes regular-expression))
-        (node (add-code state regular-expression nil)))
-    (setf (node-code node)
-          `(,@(loop for effect in (effects regular-expression)
-                    collect (generate-effect-code state effect))
-            (with-next-value
-                (value (cond
-                         ,@(loop for class in classes
-                                 for derivative = (derivative regular-expression class)
-                                 unless (set-null class)
-                                   collect `(,(make-test-form class 'value)
-                                             ,(go-to-state-form state regular-expression derivative)))))
-              ,(go-to-state-form state regular-expression (empty-set)))))))
+  (unless (gethash regular-expression (compiler-state-table state))
+    (let ((classes (derivative-classes regular-expression))
+          (node (add-code state regular-expression nil)))
+      (setf (node-code node)
+            `((with-next-value
+                  (value (cond
+                           ,@(loop for class in classes
+                                   unless (set-null class)
+                                     collect (multiple-value-bind (derivative effects)
+                                                 (derivative regular-expression class)
+                                               `(,(make-test-form class 'value)
+                                                 ,@(loop for effect in effects
+                                                         collect (generate-effect-code state effect))
+                                                 ,(go-to-state-form state regular-expression derivative))))))
+                ,(go-to-state-form state regular-expression (empty-set))))))))
 
 (defun make-lambda-form (regular-expression
                          &key (vector-type 'vector)
@@ -153,7 +160,8 @@
              (prog* ((this-start start)
                      (position this-start)
                      ,@(group-bindings compiler-state))
-                (declare (fixnum position this-start))
+                (declare (fixnum position this-start)
+                         (alexandria:array-index ,@(group-indexes compiler-state)))
               loop
                 ,(boyer-moore-horspool-search-expression 'this-start 'end 'vector
                                                          prefix
