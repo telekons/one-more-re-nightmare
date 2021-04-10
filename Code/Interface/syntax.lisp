@@ -3,7 +3,7 @@
 (defvar *next-group*)
 (defun next-group ()
   (prog1 *next-group*
-    (incf *next-group*)))
+    (incf *next-group* 2)))
 
 (esrap:defrule escaped-character
     (and #\\ character)

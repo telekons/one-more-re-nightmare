@@ -7,9 +7,10 @@ expressions. To actual machine code (well, Common Lisp, it goes to machine
 code if you use a Lisp implementation that generates machine code somehow.)
 It's probably quite fast.
 
-Thanks to Gilbert Baumann for suggesting I use derivatives to compile regular
-expressions, and my discrete mathematics teachers for properly introducing me
-to finite state machines.
+Thanks to Gilbert Baumann for suggesting I use derivatives to compile
+regular expressions, and then for informing me of how to handle
+submatching properly, and my discrete mathematics teachers for
+formally introducing me to finite state machines.
 
 ## High level interface
 

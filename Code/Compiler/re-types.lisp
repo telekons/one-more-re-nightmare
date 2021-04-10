@@ -15,6 +15,13 @@
   :simplify (((kleene (kleene r)) (kleene r))
              ((kleene (empty-set)) (empty-string))))
 (define-type (tag-set substitutions))
+(defmethod print-object ((set tag-set) stream)
+  (write (cons 'tag-set
+               (loop for (variable nil source)
+                       in (slot-value set 'substitutions)
+                     collect (list variable source)))
+         :stream stream))
+
 (define-type (either r s)
   :simplify (((either r s)
               (if (eq r s)
@@ -77,3 +84,8 @@
                       vector)
           :initial-value (empty-string) 
           :from-end t))
+
+(defun group (r n)
+  (join (tag-set `((,n 0 position)))
+        (join r
+              (tag-set `((,(1+ n) 0 position))))))
