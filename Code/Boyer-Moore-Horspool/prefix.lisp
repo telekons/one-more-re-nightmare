@@ -19,9 +19,7 @@
           (values (append prefix prefix2) suffix2)))
        (t
         (values prefix (join suffix s))))))
-    ((or (either _ _) (both _ _) (invert _) (kleene _)
-         (empty-string) (start-group _) (end-group _))
-     (values nil re)))
+  (_ (values nil re)))
 
 (defun prefix (re)
   (multiple-value-bind (prefix suffix)

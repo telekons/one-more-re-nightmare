@@ -1,14 +1,16 @@
 (in-package :one-more-re-nightmare)
 
-(trivia:defun-ematch nullable (re)
-  "Could the regular expression match an empty string?"
-  ((or (empty-string)
-       (start-group _)
-       (end-group _))
-   t)
-  ((literal _)    nil)
-  ((join r s)     (and (nullable r) (nullable s)))
-  ((either r s)   (or  (nullable r) (nullable s)))
-  ((kleene _)     t)
-  ((both r s)     (and (nullable r) (nullable s)))
-  ((invert r)     (not (nullable r))))
+(trivia:defun-ematch %nullable (re)
+  ((empty-string) (empty-string))
+  ((literal _)    (empty-set))
+  ((join r s)     (both   (%nullable r) (%nullable s)))
+  ((either r s)   (either (%nullable r) (%nullable s)))
+  ((kleene _)     (empty-string))
+  ((both r s)     (both (%nullable r) (%nullable s)))
+  ((tag-set s)    (tag-set (gensym-position-assignments s)))
+  ((invert r)     (invert (%nullable r))))
+
+(defun nullable (re)
+  "(language-of (nullable RE)) = (language-of (both RE (empty-string)))"
+  (let ((*original-re* re))
+    (%nullable re)))

@@ -11,8 +11,7 @@
   (trivia:ematch re
     ((literal set)  (list set (set-inverse set)))
     ((or (empty-string)
-         (start-group _)
-         (end-group _))
+         (tag-set _))
      (list (make-instance 'negative-symbol-set :elements '())))
     ((join r s)
      (if (nullable r)

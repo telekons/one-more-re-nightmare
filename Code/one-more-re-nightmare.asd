@@ -6,10 +6,12 @@
                 :components ((:file "type")
                              (:file "sets")
                              (:file "re-types")
+                             (:file "tag-sets")
                              (:file "nullable")
                              (:file "derivative")
                              (:file "derivative-classes")
-                             (:file "effects")
+                             (:file "empty")
+                             (:file "make-dfa")
                              (:file "compile-regexp")))
                (:module "Boyer-Moore-Horspool"
                 :components ((:file "prefix")

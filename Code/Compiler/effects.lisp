@@ -8,8 +8,7 @@
   (_ nil))
 
 (trivia:defun-match effects (re)
-  ((or (start-group _) (end-group _))
-   (list re))
+  ((tag-set s) s)
   ((join r s)
    (if (has-literals? r)
        (effects r)
