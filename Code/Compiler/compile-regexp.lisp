@@ -14,7 +14,8 @@
                                                 (tags regular-expression))
                                            regular-expression
                                            vector-type
-                                           aref-generator)))))
+                                           aref-generator))
+            (length (tags regular-expression)))))
 
 (defstruct tagbody-state
   name code)
@@ -140,7 +141,7 @@
                 (,vector-type vector)
                 (simple-vector tags)
                 (alexandria:array-length start end)
-                (ignorable start end vector)
+                (ignorable start end tags vector)
                 #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
        (block scan
          (macrolet ((with-next-value (value succeed-body fail-body)

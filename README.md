@@ -18,10 +18,14 @@ The high level interface implicitly caches and compiles regular expressions,
 specialised to its input vectors. 
 
 `(all-matches regular-expression vector &key start end)` returns a list of all
-`(start end)`s of each match found.
+`(start end submatch)`s of each match found.
+
+(`submatch` is a vector consisting of either vector indices or `nil`,
+consisting of the start of the first group, then the first end, then the second
+start, and so on.)
 
 `all-string-matches` takes the same arguments and returns a list of all 
-subsequences matching.
+subsequences matching, and a list of vectors of submatch subsequences.
 
 `(first-match regular-expression vector &key start end)` returns the start and 
 end of the first match as multiple values, or two `NIL`s if no match was found.
