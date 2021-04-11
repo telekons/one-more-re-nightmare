@@ -57,14 +57,16 @@
 (defun generate-dispatch-code (compiler-state transitions)
   `(cond
      ,@(loop for transition in transitions
+             for next-state = (transition-next-state transition)
              collect `(,(make-test-form (transition-class transition) 'value)
                        (setf ,@(loop for (variable replica source)
                                        in (transition-tags-to-set transition)
                                      appending (list (tag-variable-name compiler-state
                                                                         (list variable replica))
                                                      (tag-variable-name compiler-state source))))
-                       (incf position)
-                       (go ,(re-name compiler-state (transition-next-state transition)))))))
+                       ,(when (transition-increment-position-p transition)
+                          '(incf position))
+                       (go ,(re-name compiler-state next-state))))))
 
 (defun generate-tags-code (compiler-state re state tag-names)
   (let ((sources (make-array (length tag-names)
@@ -154,6 +156,8 @@
                              collect `(,name nil)))
                 (declare (alexandria:array-index position this-start)
                          ((or alexandria:array-index null)
+                          ,@(tag-variable-names compiler-state))
+                         (ignorable
                           ,@(tag-variable-names compiler-state)))
               loop
                 (setf position this-start)

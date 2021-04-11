@@ -11,6 +11,7 @@
                              (:file "derivative")
                              (:file "derivative-classes")
                              (:file "empty")
+                             (:file "similar")
                              (:file "make-dfa")
                              (:file "compile-regexp")))
                (:module "Boyer-Moore-Horspool"

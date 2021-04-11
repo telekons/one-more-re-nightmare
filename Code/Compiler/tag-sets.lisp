@@ -6,7 +6,7 @@
   (incf *tag-gensym-counter*))
 
 (defun gensym-position-assignments (set)
-  "Replicate any assignments from position, turning T_n <- position into T^r_n <- T_n for some arbitrary r"
+  "Replicate any assignments, turning T_n <- s for all s into T^r_n <- T_n for some arbitrary r"
   (loop for (variable replica source) in set
         collect (list variable (tag-gensym) (list variable replica))))
 

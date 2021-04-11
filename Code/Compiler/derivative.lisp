@@ -20,3 +20,10 @@
      (both (derivative r set) (derivative s set)))
     ((invert r)
      (invert (derivative r set)))))
+
+(defun derivative* (re sequence)
+  (map 'nil
+       (lambda (element)
+         (setf re (derivative re (symbol-set element))))
+       sequence)
+  re)
