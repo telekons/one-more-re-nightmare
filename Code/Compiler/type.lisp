@@ -2,7 +2,7 @@
 
 (defvar *instances* (make-hash-table :test 'eql))
 
-(defmacro define-type ((name &rest slots) &key simplify hash-cons)
+(defmacro define-type ((name &rest slots) &key simplify hash-cons printer)
   (let ((variables (loop for slot in slots collect (gensym (symbol-name slot))))
         (internal-creator (alexandria:format-symbol nil "%~a" name)))
     `(progn
@@ -23,9 +23,12 @@
                    collect `(setf (slot-value instance ',slot) ,slot))
            instance))
        (defmethod print-object ((instance ,name) stream)
-         (write (list ',name ,@(loop for slot in slots
-                                     collect `(slot-value instance ',slot)))
-                :stream stream))
+         ,(if (null printer)
+              `(write (list ',name ,@(loop for slot in slots
+                                           collect `(slot-value instance ',slot)))
+                      :stream stream)
+              `(trivia:ematch instance
+                 ,printer)))
        (defun ,name ,slots
          (trivia:match (list ,@slots)
            ,@(loop for ((nil . pattern) replacement) in simplify

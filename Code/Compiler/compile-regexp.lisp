@@ -59,7 +59,8 @@
   `(cond
      ,@(loop for transition in transitions
              for next-state = (transition-next-state transition)
-             collect `(,(make-test-form (transition-class transition) 'value)
+             for class = (transition-class transition)
+             collect `(,(make-test-form class 'value)
                        (setf ,@(loop for (variable replica source)
                                        in (transition-tags-to-set transition)
                                      appending (list (tag-variable-name compiler-state

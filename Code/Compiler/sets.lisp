@@ -88,6 +88,9 @@
   (:method ((s1 negative-symbol-set) (s2 negative-symbol-set))
     (set-equal (elements s1) (elements s2))))
 
+(defun symbol-set-difference (set1 set2)
+  (set-intersection set1 (set-inverse set2)))
+
 (defgeneric make-test-form (set variable)
   (:method ((set positive-symbol-set) variable)
     `(or ,@(loop for element in (elements set)

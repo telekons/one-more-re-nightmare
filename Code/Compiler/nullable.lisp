@@ -4,8 +4,11 @@
   "(language-of (nullable RE)) = (language-of (both RE (empty-string)))"
   ((empty-string) (empty-string))
   ((literal _)    (empty-set))
-  ((join r s)     (both   (nullable r) (nullable s)))
-  ((either r s)   (either (nullable r) (nullable s)))
+  ((join r s)     (join   (nullable r) (nullable s)))
+  ((either r s)   (let ((r* (nullable r)))
+                    (if (typep r* '(or empty-string tag-set))
+                        r*
+                        (either r* (nullable s)))))
   ((kleene _)     (empty-string))
   ((both r s)     (both (nullable r) (nullable s)))
   ((tag-set s)    (tag-set (gensym-position-assignments s)))
