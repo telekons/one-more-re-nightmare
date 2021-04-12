@@ -9,7 +9,10 @@
                     (if (typep r* '(or empty-string tag-set))
                         r*
                         (either r* (nullable s)))))
-  ((kleene _)     (empty-string))
+  ((kleene r)     (let ((r* (nullable r)))
+                    (if (eq r* (empty-set))
+                        (empty-string)
+                        r*)))
   ((both r s)     (both (nullable r) (nullable s)))
   ((tag-set s)    (tag-set (gensym-position-assignments s)))
   ((invert r)     (invert (nullable r))))

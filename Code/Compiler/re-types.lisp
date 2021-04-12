@@ -3,11 +3,17 @@
 (define-type (literal set)
   :printer ((literal set)
             (let ((es (elements set)))
-              (if (= (length es) 1)
-                  (if (typep set 'negative-symbol-set)
-                      (format stream "(¬~a)" (first es))
-                      (format stream "~a" (first es)))
-                  (format stream "~a" set)))))
+              (case (length es)
+                (0
+                 (if (typep set 'negative-symbol-set)
+                     (write-char #\Σ stream)
+                     (write-char #\ø stream)))
+                (1
+                 (if (typep set 'negative-symbol-set)
+                     (format stream "(¬~a)" (first es))
+                     (format stream "~a" (first es))))
+                (otherwise
+                 (format stream "~a" set))))))
 
 (defun empty-set ()
   (literal (symbol-set)))
@@ -23,7 +29,7 @@
   :simplify (((kleene (kleene r)) (kleene r))
              ((kleene (empty-set)) (empty-string)))
   :printer ((kleene r)
-            (format stream "[~a*]" r)))
+            (format stream "[~a]*" r)))
 (define-type (tag-set substitutions)
   :printer ((tag-set s)
             (format stream "[~{~a ← ~a~^, ~}]"
@@ -40,6 +46,10 @@
 (define-type (either r s)
   :simplify (((either r s)
               (if (eq r s)
+                  r
+                  (trivia.next:next)))
+             ((either r s)
+              (if (eq (remove-tags r) (remove-tags s))
                   r
                   (trivia.next:next)))
              ((either (either r s) q)

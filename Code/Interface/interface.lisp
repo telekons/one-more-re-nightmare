@@ -49,7 +49,8 @@
           for end   = (aref tag-vector (1+ tag-n))
           unless (or (null start) (null end))
             do (setf (aref subseqs n)
-                     (subseq vector start end)))))
+                     (subseq vector start end)))
+    subseqs))
 
 (defun all-string-matches (regular-expression vector
                            &key (start 0) (end (length vector)))

@@ -27,3 +27,12 @@
 (defun new-tags (new-re old-re)
   (set-difference (tags old-re) (tags new-re)
                   :test #'equal))
+
+(trivia:defun-match remove-tags (re)
+  ((tag-set _) (empty-string))
+  ((either r s) (either (remove-tags r) (remove-tags s)))
+  ((both r s) (both (remove-tags r) (remove-tags s)))
+  ((join r s) (join (remove-tags r) (remove-tags s)))
+  ((kleene r) (kleene (remove-tags r)))
+  ((invert r) (kleene (remove-tags r)))
+  (_ re))

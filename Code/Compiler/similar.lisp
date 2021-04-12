@@ -10,7 +10,7 @@
     (return-from assert-equivalent))
   (multiple-value-bind (old-to present?)
       (gethash from *environment*)
-    (when (and present? (not (eq to old-to)))
+    (when (and present? (not (equal to old-to)))
       (error 'no-match))
     (setf (gethash from *environment*) to)))
 
@@ -52,8 +52,7 @@
               (error 'no-match))
             (assert-equivalent-sources s1 s2)
             (assert-equivalent (list v1 r1)
-                               (list v2 r2))
-            (assert-equivalent s1 s2)))
+                               (list v2 r2))))
   (_ (error 'no-match)))
 
 (defun similar (from to)
