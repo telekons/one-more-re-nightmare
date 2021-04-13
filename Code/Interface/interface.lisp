@@ -1,38 +1,43 @@
 (in-package :one-more-re-nightmare)
 
+;;; A hash-table of (regular-expression . class) → (function . tag-count)
 (defvar *compiled-regexps* (make-hash-table :test 'equal))
-(defvar *last-used-regexp* (vector nil nil nil))
+(declaim ((simple-vector 4) *last-used-regexp*))
+(defvar *last-used-regexp* (vector nil nil nil 0))
 
 (defun vector-expression-type (vector)
   (let ((array-type (if (typep vector 'simple-array)
                         'simple-array 'array)))
     `(,array-type ,(array-element-type vector) (*))))
 
-(defun set-last-used-regexp (regular-expression class information)
+(declaim (inline set-last-used-regexp))
+(defun set-last-used-regexp (regular-expression class code tags)
   (setf (svref *last-used-regexp* 0) regular-expression
         (svref *last-used-regexp* 1) class
-        (svref *last-used-regexp* 2) information))
+        (svref *last-used-regexp* 2) code
+        (svref *last-used-regexp* 3) tags))
 
 (defun find-compiled-regular-expression (regular-expression vector)
-  (let* ((class (class-of vector))
-         (key   (cons class regular-expression)))
+  (let ((class (class-of vector)))
     (when (and (eq (svref *last-used-regexp* 0) regular-expression)
                (eq (svref *last-used-regexp* 1) class))
       (return-from find-compiled-regular-expression
-        (values-list (svref *last-used-regexp* 2))))
-    (multiple-value-bind (information present?)
-        (gethash key *compiled-regexps*)
-      (when present?
-        (set-last-used-regexp regular-expression class information)
-        (return-from find-compiled-regular-expression
-          (values-list information))))
-    (let ((information
-            (multiple-value-list
-             (compile-regular-expression
-              regular-expression
-              :vector-type (vector-expression-type vector)))))
-      (setf (gethash key *compiled-regexps*) information)
-      (values-list information))))
+        (values (svref *last-used-regexp* 2)
+                (svref *last-used-regexp* 3))))
+    (let ((key (cons class regular-expression)))
+      (multiple-value-bind (information present?)
+          (gethash key *compiled-regexps*)
+        (when present?
+          (set-last-used-regexp regular-expression class
+                                (car information) (cdr information))
+          (return-from find-compiled-regular-expression
+            (values (car information) (cdr information)))))
+      (multiple-value-bind (code tags)
+          (compile-regular-expression
+           regular-expression
+           :vector-type (vector-expression-type vector))
+        (setf (gethash key *compiled-regexps*) (cons code tags))
+        (values code tags)))))
 
 (defvar *empty-vector* #())
 
@@ -42,6 +47,7 @@
   (multiple-value-bind (function tags)
       (find-compiled-regular-expression regular-expression
                                         vector)
+    (declare (function function))
     (let ((matches '())
           (tag-vector (if (zerop tags)
                           *empty-vector*
@@ -84,6 +90,7 @@
   (multiple-value-bind (function tags)
       (find-compiled-regular-expression regular-expression
                                         vector)
+    (declare (function function))
     (let ((tag-vector (if (zerop tags)
                           *empty-vector*
                           (make-array tags))))
