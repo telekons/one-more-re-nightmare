@@ -54,13 +54,13 @@ under-either | under-either
     (join expression (kleene expression))))
 
 (esrap:defrule either
-    (and under-either "|" under-either)
+    (and under-either "|" (or either under-either))
   (:destructure (e1 bar e2)
     (declare (ignore bar))
     (either e1 e2)))
 
 (esrap:defrule both
-    (and under-both "&" under-both)
+    (and under-both "&" (or both under-both))
   (:destructure (e1 bar e2)
     (declare (ignore bar))
     (both e1 e2)))
