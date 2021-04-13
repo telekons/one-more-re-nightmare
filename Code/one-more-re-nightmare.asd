@@ -13,6 +13,7 @@
                              (:file "empty")
                              (:file "similar")
                              (:file "make-dfa")
+                             (:file "prefix-scanner")
                              (:file "compile-regexp")))
                (:module "Boyer-Moore-Horspool"
                 :components ((:file "prefix")

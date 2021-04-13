@@ -8,17 +8,17 @@
        (values (list (first (elements set))) nil)
        (values nil re)))
   ((join r s)
-   (multiple-value-bind (prefix suffix)
+   (multiple-value-bind (prefix1 suffix1)
        (%prefix r)
      (cond
-       ((null prefix)
+       ((null prefix1)
         (values nil re))
-       ((null suffix)
+       ((null suffix1)
         (multiple-value-bind (prefix2 suffix2)
             (%prefix s)
-          (values (append prefix prefix2) suffix2)))
+          (values (append prefix1 prefix2) suffix2)))
        (t
-        (values prefix (join suffix s))))))
+        (values prefix1 (join suffix1 s))))))
   (_ (values nil re)))
 
 (defun prefix (re)

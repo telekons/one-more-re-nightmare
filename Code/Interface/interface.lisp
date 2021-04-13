@@ -1,26 +1,40 @@
 (in-package :one-more-re-nightmare)
 
 (defvar *compiled-regexps* (make-hash-table :test 'equal))
+(defvar *last-used-regexp* (vector nil nil nil))
 
 (defun vector-expression-type (vector)
   (let ((array-type (if (typep vector 'simple-array)
                         'simple-array 'array)))
     `(,array-type ,(array-element-type vector) (*))))
 
-(defun find-regular-expression-table (type)
-  (or (gethash type *compiled-regexps*)
-      (setf (gethash type *compiled-regexps*)
-            (make-hash-table :test 'equal))))
+(defun set-last-used-regexp (regular-expression class information)
+  (setf (svref *last-used-regexp* 0) regular-expression
+        (svref *last-used-regexp* 1) class
+        (svref *last-used-regexp* 2) information))
 
 (defun find-compiled-regular-expression (regular-expression vector)
-  (let* ((type  (vector-expression-type vector))
-         (table (find-regular-expression-table type)))
-    (values-list
-     (or (gethash regular-expression table)
-         (setf (gethash regular-expression table)
-               (multiple-value-list
-                (compile-regular-expression regular-expression
-                                            :vector-type type)))))))
+  (let* ((class (class-of vector))
+         (key   (cons class regular-expression)))
+    (when (and (eq (svref *last-used-regexp* 0) regular-expression)
+               (eq (svref *last-used-regexp* 1) class))
+      (return-from find-compiled-regular-expression
+        (values-list (svref *last-used-regexp* 2))))
+    (multiple-value-bind (information present?)
+        (gethash key *compiled-regexps*)
+      (when present?
+        (set-last-used-regexp regular-expression class information)
+        (return-from find-compiled-regular-expression
+          (values-list information))))
+    (let ((information
+            (multiple-value-list
+             (compile-regular-expression
+              regular-expression
+              :vector-type (vector-expression-type vector)))))
+      (setf (gethash key *compiled-regexps*) information)
+      (values-list information))))
+
+(defvar *empty-vector* #())
 
 (defun all-matches (regular-expression vector
                     &key (start 0) (end (length vector)))
@@ -29,7 +43,9 @@
       (find-compiled-regular-expression regular-expression
                                         vector)
     (let ((matches '())
-          (tag-vector (make-array tags)))
+          (tag-vector (if (zerop tags)
+                          *empty-vector*
+                          (make-array tags))))
       (funcall function vector start end tag-vector
                (lambda (start end)
                  (push (list start end (alexandria:copy-array tag-vector))
@@ -68,7 +84,9 @@
   (multiple-value-bind (function tags)
       (find-compiled-regular-expression regular-expression
                                         vector)
-    (let ((tag-vector (make-array tags)))
+    (let ((tag-vector (if (zerop tags)
+                          *empty-vector*
+                          (make-array tags))))
       (funcall function vector start end tag-vector
                (lambda (start end)
                  (return-from first-match (values start end tag-vector))))

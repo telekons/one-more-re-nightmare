@@ -7,15 +7,13 @@
   "Compile a function that will match the regular expression to a vector of type VECTOR-TYPE."
   (when (stringp regular-expression)
     (setf regular-expression (parse-regular-expression regular-expression)))
-  (multiple-value-bind (dfa states)
-      (make-dfa-from-expression regular-expression)
-    (values (compile nil (make-lambda-form dfa states
-                                           (map 'vector #'first
-                                                (tags regular-expression))
-                                           regular-expression
-                                           vector-type
-                                           aref-generator))
-            (length (tags regular-expression)))))
+  (values (compile nil
+                   (make-lambda-form (map 'vector #'first
+                                          (tags regular-expression))
+                                     regular-expression
+                                     vector-type
+                                     aref-generator))
+          (length (tags regular-expression))))
 
 (defstruct tagbody-state
   name code)
@@ -113,55 +111,79 @@
                  (return-from scan))
               `(return-from scan)))))
 
-(defun make-lambda-form (dfa states tag-names
-                         initial-state vector-type aref-generator)
+(defun make-lambda-form (tag-names regular-expression vector-type aref-generator)
   "Make a LAMBDA form that can be compiled to a function that matches the regular expression to vectors of VECTOR-TYPE."
-  (let ((compiler-state (make-compiler-state)))
-      ;; We'll put real code in shortly, after we finish producing the DFA and
-    ;; have submatch variable names to include.
-    (let ((e (empty-string)))
-      (add-code compiler-state e
-                (generate-code-for-state compiler-state
-                                         e (gethash e states)
-                                         dfa tag-names)))
-    (maphash (lambda (state information)
-               (add-code compiler-state state
-                         (generate-code-for-state compiler-state
-                                                  state information
-                                                  dfa tag-names)))
-             states)
-    (add-code compiler-state (empty-set)
-              `(progn
-                 (incf this-start)
-                 (go loop)))
-    `(lambda (vector start end tags continuation)
-       (declare (optimize (speed 3) (safety 0)
-                          (debug 0) (space 0)
-                          (compilation-speed 0))
-                (function continuation)
-                (,vector-type vector)
-                (simple-vector tags)
-                (alexandria:array-length start end)
-                (ignorable start end tags vector)
-                #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
-       (block scan
-         (macrolet ((with-next-value (value succeed-body fail-body)
-                      `(if (>= position end)
-                           ,fail-body
-                           (let ((,value
-                                     ,',(funcall aref-generator 'vector 'position)))
-                               (declare (ignorable ,value))
-                               ,succeed-body))))
-             (prog* ((this-start start)
-                     (position this-start)
-                     ,@(loop for name in (tag-variable-names compiler-state)
-                             collect `(,name nil)))
-                (declare (alexandria:array-index position this-start)
-                         ((or alexandria:array-index null)
-                          ,@(tag-variable-names compiler-state))
-                         (ignorable
-                          ,@(tag-variable-names compiler-state)))
-              loop
-                (setf position this-start)
-                (go ,(re-name compiler-state initial-state))
-              ,@(state-body compiler-state)))))))
+  (let* ((*compiler-state* (make-compiler-state))
+         (*dfa-roots* '())
+         (nu (nullable regular-expression))
+         (fail-code
+           (if (eq nu (empty-set))
+               '(return-from scan)
+               `(progn
+                  (setf this-start end)
+                  ,(generate-tags-code regular-expression
+                                       nu
+                                       (make-state :exit-map (tags nu))
+                                       tag-names)
+                  (funcall continuation this-start position)
+                  (return-from scan))))
+         (starting-code
+           (compiler:generate-starting-code compiler:*scanner*
+                                            regular-expression
+                                            aref-generator
+                                            fail-code)))
+    (multiple-value-bind (dfa states)
+        (make-dfa-from-expression regular-expression)
+      (%make-lambda-form dfa states tag-names
+                         starting-code
+                         vector-type aref-generator))))
+
+(defun %make-lambda-form (dfa states tag-names
+                          starting-code vector-type aref-generator)
+  ;; We'll put real code in shortly, after we finish producing the DFA and
+  ;; have submatch variable names to include.
+  (let ((e (empty-string)))
+    (add-code *compiler-state* e
+              (generate-code-for-state *compiler-state*
+                                       e (gethash e states)
+                                       dfa tag-names)))
+  (maphash (lambda (state information)
+             (add-code *compiler-state* state
+                       (generate-code-for-state *compiler-state*
+                                                state information
+                                                dfa tag-names)))
+           states)
+  (add-code *compiler-state* (empty-set)
+            `(progn
+               (incf this-start)
+               (go loop)))
+  `(lambda (vector start end tags continuation)
+     (declare (optimize (speed 3) (safety 0)
+                        (debug 0) (space 0)
+                        (compilation-speed 0))
+              (function continuation)
+              (,vector-type vector)
+              (simple-vector tags)
+              (alexandria:array-length start end)
+              (ignorable start end tags vector)
+              #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note))
+     (block scan
+       (macrolet ((with-next-value (value succeed-body fail-body)
+                    `(if (>= position end)
+                         ,fail-body
+                         (let ((,value
+                                 ,',(funcall aref-generator 'vector 'position)))
+                           (declare (ignorable ,value))
+                           ,succeed-body))))
+         (prog* ((this-start start)
+                 (position this-start)
+                 ,@(loop for name in (tag-variable-names *compiler-state*)
+                         collect `(,name nil)))
+            (declare (alexandria:array-index position this-start)
+                     ((or alexandria:array-index null)
+                      ,@(tag-variable-names *compiler-state*))
+                     (ignorable
+                      ,@(tag-variable-names *compiler-state*)))
+          loop
+            ,starting-code
+            ,@(state-body *compiler-state*))))))
