@@ -133,7 +133,7 @@
                                             aref-generator
                                             fail-code)))
     (multiple-value-bind (dfa states)
-        (make-dfa-from-expression regular-expression)
+        (make-dfa-from-expressions *dfa-roots*)
       (%make-lambda-form dfa states tag-names
                          starting-code
                          vector-type aref-generator))))
