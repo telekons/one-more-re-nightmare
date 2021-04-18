@@ -5,6 +5,9 @@
 (defvar *environment*)
 
 (defun assert-equivalent (from to)
+  (when (equal from to)
+    ;; Don't care for X ~ X
+    (return-from assert-equivalent))
   (when (and (eql from 'position) (eql to 'position))
     ;; Don't care for POSITION ~ POSITION
     (return-from assert-equivalent))

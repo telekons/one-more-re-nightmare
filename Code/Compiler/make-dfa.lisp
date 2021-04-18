@@ -10,16 +10,21 @@
   final-p
   exit-map)
 
-(defun find-similar-state (states state)
+(defun find-similar-state (states old-state state)
   "Find another state which we can re-use with some transformation, returning that state and the required transformation."
-  (loop for other-state being the hash-keys of states
-        for substitutions = (similar state other-state)
-        unless (null substitutions)
-          do (return-from find-similar-state
-               (values other-state
-                       (loop for ((v1 r1) . source)
-                               in (alexandria:hash-table-alist substitutions)
-                             collect (list v1 r1 source))))))
+  (flet ((win (other-state substitutions)
+           (return-from find-similar-state
+             (values other-state
+                     (loop for ((v1 r1) . source)
+                             in (alexandria:hash-table-alist substitutions)
+                           collect (list v1 r1 source))))))
+    (let ((subs (similar state old-state)))
+      (unless (null subs)
+        (win old-state subs)))
+    (loop for other-state being the hash-keys of states
+          for substitutions = (similar state other-state)
+          unless (null substitutions)
+            do (win other-state substitutions))))
 
 (defun add-transition (class last-state next-state tags-to-set increment-p dfa)
   (let* ((old-transitions (gethash last-state dfa))
@@ -58,7 +63,7 @@
       (let* ((state  (pop work-list))
              (classes (derivative-classes state)))
         (cond
-          ((re-empty-p state))
+          ((re-empty-p state) nil)
           (t
            (dolist (class classes)
              (unless (set-null class)
@@ -74,7 +79,7 @@
                              tags-to-set (new-tags n state)
                              increment-p nil))))
                  (multiple-value-bind (other-state transformation)
-                     (find-similar-state states next-state)
+                     (find-similar-state states state next-state)
                    (cond
                      ((null other-state)
                       (unless (nth-value 1 (gethash next-state dfa))

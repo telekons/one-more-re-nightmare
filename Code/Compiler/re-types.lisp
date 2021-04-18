@@ -114,6 +114,10 @@
             (format stream "~a~a" r s)))
 
 (define-type (grep r s)
+  :simplify (((grep r _)
+              (if (eq (nullable r) (empty-set))
+                  (trivia.next:next)
+                  r)))
   :printer ((grep r _)
             (format stream "(GREP ~a #)" r)))
 
