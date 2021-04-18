@@ -15,4 +15,6 @@
                         r*)))
   ((both r s)     (both (nullable r) (nullable s)))
   ((tag-set s)    (tag-set (gensym-position-assignments s)))
-  ((invert r)     (invert (nullable r))))
+  ((invert r)     (invert (nullable r)))
+  ((grep r _) (nullable r))
+  ((alpha r n) (either (nullable r) n))) 

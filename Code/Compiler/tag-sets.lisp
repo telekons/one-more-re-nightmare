@@ -10,6 +10,11 @@
   (loop for (variable replica source) in set
         collect (list variable (tag-gensym) (list variable replica))))
 
+(defun unique-assignments (set)
+  "Make assignments unique, turning T_n <- s for all s into T^r_n <- s"
+  (loop for (variable replica source) in set
+        collect (list variable (tag-gensym) source)))
+
 (defun merge-tag-sets (set1 set2)
   (append (loop for (variable replica source) in set1
                 unless (find variable set2 :key #'first)
@@ -22,6 +27,8 @@
    (append (tags r) (tags s)))
   ((or (kleene r) (invert r))
    (tags r))
+  ((grep r _) (tags r))
+  ((alpha r _) (tags r))
   (_ '()))
 
 (defun new-tags (new-re old-re)
@@ -35,4 +42,13 @@
   ((join r s) (join (remove-tags r) (remove-tags s)))
   ((kleene r) (kleene (remove-tags r)))
   ((invert r) (kleene (remove-tags r)))
+  (_ re))
+
+(trivia:defun-match unique-tags (re)
+  ((tag-set set) (tag-set (unique-assignments set)))
+  ((either r s) (either (unique-tags r) (unique-tags s)))
+  ((both r s) (both (unique-tags r) (unique-tags s)))
+  ((join r s) (join (unique-tags r) (unique-tags s)))
+  ((kleene r) (kleene (unique-tags r)))
+  ((invert r) (kleene (unique-tags r)))
   (_ re))

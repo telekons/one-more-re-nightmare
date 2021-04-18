@@ -113,6 +113,14 @@
   :printer ((join r s)
             (format stream "~a~a" r s)))
 
+(define-type (grep r s)
+  :printer ((grep r _)
+            (format stream "(GREP ~a #)" r)))
+
+(define-type (alpha r n)
+  :printer ((alpha r n)
+            (format stream "(ALPHA ~a ~a)" r n)))
+
 (defun text (vector)
   (reduce #'join (map 'vector (lambda (e)
                                 (literal (symbol-set e)))

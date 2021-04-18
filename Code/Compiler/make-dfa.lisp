@@ -21,6 +21,29 @@
                                in (alexandria:hash-table-alist substitutions)
                              collect (list v1 r1 source))))))
 
+(defun add-transition (class last-state next-state tags-to-set increment-p dfa)
+  (let* ((old-transitions (gethash last-state dfa))
+         (same-transition
+           (find-if (lambda (transition)
+                      (and
+                       (equal tags-to-set (transition-tags-to-set transition))
+                       (eq next-state (transition-next-state transition))
+                       (eq increment-p
+                           (transition-increment-position-p transition))))
+                    old-transitions)))
+    (cond
+      ((null same-transition)
+       (push (make-transition
+              :class class
+              :next-state next-state
+              :tags-to-set tags-to-set
+              :increment-position-p increment-p)
+             (gethash last-state dfa)))
+      (t
+       (setf (transition-class same-transition)
+             (set-union (transition-class same-transition)
+                        class))))))
+
 (defun make-dfa-from-expressions (expressions)
   (let ((dfa    (make-hash-table))
         (states (make-hash-table))
@@ -37,9 +60,9 @@
         (cond
           ((re-empty-p state))
           (t
-           (dolist (classes classes)
-             (unless (set-null classes)
-               (let* ((next-state (derivative state classes))
+           (dolist (class classes)
+             (unless (set-null class)
+               (let* ((next-state (derivative state class))
                       (tags-to-set (new-tags next-state state))
                       (increment-p t))
                  ;; Wire up this transition to "succeed" if it is nullable and
@@ -60,12 +83,9 @@
                       (setf tags-to-set (merge-tag-sets transformation
                                                         tags-to-set)
                             next-state  other-state))))
-                 (push (make-transition
-                        :class classes
-                        :next-state next-state
-                        :tags-to-set tags-to-set
-                        :increment-position-p increment-p)
-                       (gethash state dfa)))))))
+                 (add-transition class
+                                 state next-state
+                                 tags-to-set increment-p dfa))))))
         (let ((n (nullable state)))
           (setf (gethash state states)
                 (make-state :final-p (not (eq n (empty-set)))

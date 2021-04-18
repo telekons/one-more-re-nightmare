@@ -20,7 +20,7 @@
     (return-from assert-equivalent-sources))
   (unless (and (listp from) (listp to))
     (error 'no-match))
-  (unless (= (first from) (first to))
+  (unless (eql (first from) (first to))
     (error 'no-match)))
 
 (trivia:defun-match* %similar (from to)
@@ -53,7 +53,13 @@
             (assert-equivalent-sources s1 s2)
             (assert-equivalent (list v1 r1)
                                (list v2 r2))))
-  (_ (error 'no-match)))
+  (((grep r1 s1) (grep r2 s2))
+   (%similar r1 r2)
+   (%similar s1 s2))
+  (((alpha r1 n1) (alpha r2 n2))
+   (%similar r1 r2)
+   (%similar n1 n2))
+  ((_ _) (error 'no-match)))
 
 (defun similar (from to)
   (let ((*environment* (make-hash-table :test 'equal)))
