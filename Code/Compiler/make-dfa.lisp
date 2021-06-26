@@ -15,14 +15,17 @@
   (flet ((win (other-state substitutions)
            (return-from find-similar-state
              (values other-state
-                     (loop for ((v1 r1) . source)
+                     (loop with used = (used-tags other-state)
+                           for ((v1 r1) . source)
                              in (alexandria:hash-table-alist substitutions)
-                           collect (list v1 r1 source))))))
+                           when (member (list v1 r1) used :test #'equal)
+                             collect (list v1 r1 source))))))
     (let ((subs (similar state old-state)))
       (unless (null subs)
         (win old-state subs)))
     (loop for other-state being the hash-keys of states
           for substitutions = (similar state other-state)
+          for used = (used-tags other-state)
           unless (null substitutions)
             do (win other-state substitutions))))
 

@@ -21,6 +21,17 @@
                   collect (list variable replica source))
           set2))
 
+(trivia:defun-match used-tags (re)
+  ((tag-set s) (mapcar #'third s))
+  ((or (either r s) (both r s) (join r s))
+   (union (used-tags r) (used-tags s) :test #'equal))
+  ((or (kleene r) (invert r))
+   (used-tags r))
+  ((grep vector _) (used-tags vector))
+  ((alpha r history)
+   (union (used-tags r) (used-tags history) :test #'equal))
+  (_ '()))
+
 (trivia:defun-match tags (re)
   ((tag-set s) s)
   ((or (either r s) (both r s) (join r s))
@@ -36,8 +47,13 @@
     ((eq new-re (empty-set))
      '())
     ((eq (nullable old-re) (empty-set))
-     (set-difference (tags old-re) (tags new-re)
-                     :test #'equal))
+     (loop with used = (used-tags new-re)
+           for assignment
+             in (set-difference (tags old-re) (tags new-re)
+                                :test #'equal)
+           for (variable replica nil) = assignment
+           when (member (list variable replica) used :test #'equal)
+             collect assignment))
     (t
      (tags old-re))))
  

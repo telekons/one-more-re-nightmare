@@ -43,6 +43,7 @@
                                       "P"
                                       (format nil "~{~a_~a~}" source))))))
 (define-type (alpha expression history)
+  :simplify (((alpha (empty-set) (empty-string)) (empty-set)))
   :printer ((alpha r n)
             (format stream "α[~a, ~a]" r n)))
 (define-type (grep match-vector prototype)
@@ -66,10 +67,6 @@
               (if (eq s q)
                   (either r q)
                   (trivia.next:next)))
-             ((either r (alpha (empty-set) (empty-string)))
-              r)
-             ((either (alpha (empty-set) (empty-string)) r)
-              r)
              ((either (either s r) q)
               (if (eq s q)
                   (either r q)
