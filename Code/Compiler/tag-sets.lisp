@@ -58,4 +58,8 @@
   ((join r s) (join (unique-tags r) (unique-tags s)))
   ((kleene r) (kleene (unique-tags r)))
   ((invert r) (invert (unique-tags r)))
+  ((alpha r old-tags)
+   (unless (eq old-tags (empty-string))
+     (error "Can't make unique tags with history"))
+   (alpha (unique-tags r) (empty-string)))
   (_ re))

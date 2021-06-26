@@ -70,14 +70,6 @@
                (let* ((next-state (derivative state class))
                       (tags-to-set (new-tags next-state state))
                       (increment-p t))
-                 ;; Wire up this transition to "succeed" if it is nullable and
-                 ;; it would usually fail.
-                 (when (eq next-state (empty-set))
-                   (let ((n (nullable state)))
-                     (unless (eq n (empty-set))
-                       (setf next-state n
-                             tags-to-set (new-tags n state)
-                             increment-p nil))))
                  (multiple-value-bind (other-state transformation)
                      (find-similar-state states state next-state)
                    (cond

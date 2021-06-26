@@ -28,15 +28,21 @@
                  s)
            r*)))
     ((alpha r old-tags)
-     (let ((r* (derivative r set)))
-       (alpha r* (either (nullable r*) old-tags))))))
+     (let* ((r* (derivative r set))
+            (nullable (nullable r*)))
+       (alpha r*
+              (if (eq nullable (empty-set))
+                  old-tags
+                  (join nullable old-tags)))))))
 
 (defun derivative* (re sequence)
   (map 'nil
        (lambda (element)
-         (print re)
          (let ((new-re (derivative re (symbol-set element))))
-           (prin1 (new-tags new-re re))
+           (format t "~&~a~&  ~:c ~a"
+                   re
+                   element
+                   (new-tags new-re re))
            (setf re new-re)))
        sequence)
   re)

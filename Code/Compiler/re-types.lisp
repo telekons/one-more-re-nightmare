@@ -30,6 +30,7 @@
              ((kleene (empty-set)) (empty-string)))
   :printer ((kleene r)
             (format stream "[~a]*" r)))
+
 (define-type (tag-set substitutions)
   :printer ((tag-set s)
             (format stream "{~{~a ← ~a~^, ~}}"
@@ -41,7 +42,16 @@
                           collect (if (eql source 'position)
                                       "P"
                                       (format nil "~{~a_~a~}" source))))))
-                  
+(define-type (alpha expression history)
+  :printer ((alpha r n)
+            (format stream "α[~a, ~a]" r n)))
+(define-type (grep match-vector prototype)
+  :simplify (((grep r _)
+              (if (eq (nullable r) (empty-set))
+                  (trivia.next:next)
+                  r)))
+  :printer ((grep r _)
+            (format stream "γ[~a]" r)))
 
 (define-type (either r s)
   :simplify (((either r s)
@@ -56,6 +66,10 @@
               (if (eq s q)
                   (either r q)
                   (trivia.next:next)))
+             ((either r (alpha (empty-set) (empty-string)))
+              r)
+             ((either (alpha (empty-set) (empty-string)) r)
+              r)
              ((either (either s r) q)
               (if (eq s q)
                   (either r q)
@@ -112,18 +126,6 @@
               (tag-set (merge-tag-sets s1 s2))))
   :printer ((join r s)
             (format stream "~a~a" r s)))
-
-(define-type (grep r s)
-  :simplify (((grep r _)
-              (if (eq (nullable r) (empty-set))
-                  (trivia.next:next)
-                  r)))
-  :printer ((grep r _)
-            (format stream "γ[~a]" r)))
-
-(define-type (alpha r n)
-  :printer ((alpha r n)
-            (format stream "α[~a, ~a]" r n)))
 
 (defun text (vector)
   (reduce #'join (map 'vector (lambda (e)
