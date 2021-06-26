@@ -32,7 +32,7 @@
             (format stream "[~a]*" r)))
 (define-type (tag-set substitutions)
   :printer ((tag-set s)
-            (format stream "[~{~a ← ~a~^, ~}]"
+            (format stream "{~{~a ← ~a~^, ~}}"
                     (loop for (variable replica source) in s
                           if (zerop replica)
                             collect variable
@@ -119,11 +119,11 @@
                   (trivia.next:next)
                   r)))
   :printer ((grep r _)
-            (format stream "(GREP ~a #)" r)))
+            (format stream "γ[~a]" r)))
 
 (define-type (alpha r n)
   :printer ((alpha r n)
-            (format stream "(ALPHA ~a ~a)" r n)))
+            (format stream "α[~a, ~a]" r n)))
 
 (defun text (vector)
   (reduce #'join (map 'vector (lambda (e)

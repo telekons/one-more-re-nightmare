@@ -32,9 +32,15 @@
   (_ '()))
 
 (defun new-tags (new-re old-re)
-  (set-difference (tags old-re) (tags new-re)
-                  :test #'equal))
-
+  (cond
+    ((eq new-re (empty-set))
+     '())
+    ((eq (nullable old-re) (empty-set))
+     (set-difference (tags old-re) (tags new-re)
+                     :test #'equal))
+    (t
+     (tags old-re))))
+ 
 (trivia:defun-match remove-tags (re)
   ((tag-set _) (empty-string))
   ((either r s) (either (remove-tags r) (remove-tags s)))
@@ -42,6 +48,7 @@
   ((join r s) (join (remove-tags r) (remove-tags s)))
   ((kleene r) (kleene (remove-tags r)))
   ((invert r) (kleene (remove-tags r)))
+  ((alpha r _) (remove-tags r))
   (_ re))
 
 (trivia:defun-match unique-tags (re)
@@ -50,5 +57,5 @@
   ((both r s) (both (unique-tags r) (unique-tags s)))
   ((join r s) (join (unique-tags r) (unique-tags s)))
   ((kleene r) (kleene (unique-tags r)))
-  ((invert r) (kleene (unique-tags r)))
+  ((invert r) (invert (unique-tags r)))
   (_ re))

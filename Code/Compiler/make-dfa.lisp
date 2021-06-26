@@ -103,8 +103,10 @@
 (defun print-dfa (dfa)
   (maphash (lambda (state transitions)
              (dolist (transition transitions)
-               (format t "~&\"~s\"~&  -> \"~s\"[label=\"~s\"]"
+               (format t "~&\"~s\"~&  -> \"~s\"[label=\"~s ~s\"]"
                        state
                        (transition-next-state transition)
-                       (transition-class transition))))
+                       (transition-class transition)
+                       (tag-set
+                        (transition-tags-to-set transition)))))
            dfa))
