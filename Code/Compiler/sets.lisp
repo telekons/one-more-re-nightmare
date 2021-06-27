@@ -23,9 +23,13 @@
   ((elements :initarg :elements :reader elements))
   (:documentation "A set represented by the elements it does not contain."))
 (defmethod print-object ((set negative-symbol-set) stream)
-  (if *print-readably*
-      (call-next-method)
-      (format stream "Σ \\ { ~{~a~^, ~} }" (elements set))))
+  (cond
+    (*print-readably*
+     (call-next-method))
+    ((null (elements set))
+     (format stream "Σ"))
+    (t
+     (format stream "Σ \\ { ~{~a~^, ~} }" (elements set)))))
 (defmethod make-instance ((class (eql (find-class 'negative-symbol-set)))
                           &rest initargs &key)
   (or (gethash initargs *negatives*)

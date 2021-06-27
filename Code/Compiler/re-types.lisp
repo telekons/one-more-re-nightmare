@@ -32,6 +32,8 @@
             (format stream "[~a]*" r)))
 
 (define-type (tag-set substitutions)
+  :simplify (((tag-set (list))
+              (empty-string)))
   :printer ((tag-set s)
             (format stream "{~{~a ← ~a~^, ~}}"
                     (loop for (variable replica source) in s
