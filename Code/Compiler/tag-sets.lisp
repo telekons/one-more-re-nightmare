@@ -17,7 +17,10 @@
 
 (defun merge-tag-sets (set1 set2)
   (append (loop for (variable replica source) in set1
-                unless (find variable set2 :key #'first)
+                unless (find (list variable replica) set2
+                             :key (lambda (v2)
+                                    (list (first v2) (second v2)))
+                             :test #'equal)
                   collect (list variable replica source))
           set2))
 

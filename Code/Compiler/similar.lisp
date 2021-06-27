@@ -24,7 +24,8 @@
   (unless (and (listp from) (listp to))
     (error 'no-match))
   (unless (eql (first from) (first to))
-    (error 'no-match)))
+    (error 'no-match))
+  (assert-equivalent from to))
 
 (trivia:defun-match* %similar (from to)
   (((both r1 s1) (both r2 s2))

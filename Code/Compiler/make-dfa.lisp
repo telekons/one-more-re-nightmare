@@ -16,10 +16,10 @@
            (return-from find-similar-state
              (values other-state
                      (loop with used = (used-tags other-state)
-                           for ((v1 r1) . source)
+                           for ((v1 r1) . (v2 r2))
                              in (alexandria:hash-table-alist substitutions)
-                           when (member (list v1 r1) used :test #'equal)
-                             collect (list v1 r1 source))))))
+                           when (member (list v2 r2) used :test #'equal)
+                             collect (list v2 r2 (list v1 r1)))))))
     (let ((subs (similar state old-state)))
       (unless (null subs)
         (win old-state subs)))
@@ -80,8 +80,8 @@
                       (unless (nth-value 1 (gethash next-state dfa))
                         (pushnew next-state work-list)))
                      (t                 ; Reuse this state.
-                      (setf tags-to-set (merge-tag-sets transformation
-                                                        tags-to-set)
+                      (setf tags-to-set (merge-tag-sets tags-to-set
+                                                        transformation)
                             next-state  other-state))))
                  (add-transition class
                                  state next-state
