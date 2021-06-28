@@ -29,7 +29,7 @@
            r*)))
     ((alpha r old-tags)
      (let* ((r* (derivative r set))
-            (nullable (nullable r*)))
+            (nullable (nullable r)))
        (alpha r* (either nullable old-tags))))))
 
 (defun derivative* (re sequence)

@@ -55,7 +55,8 @@
 (defun make-dfa-from-expressions (expressions)
   (let ((dfa    (make-hash-table))
         (states (make-hash-table))
-        (work-list expressions))
+        (work-list expressions)
+        (*tag-gensym-counter* 0))
     (setf (gethash (empty-set) dfa) '())
     (setf (gethash (empty-string) states)
           (make-state

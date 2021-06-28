@@ -4,7 +4,7 @@
   (let* ((re (join (tag-set '((start 0 position)))
                    (join re
                          (tag-set '((end 0 position))))))
-         (history-tracking-re (alpha re (nullable re))))
+         (history-tracking-re (alpha re (empty-set))))
     (grep history-tracking-re history-tracking-re)))
 
 (defun compile-regular-expression (regular-expression
