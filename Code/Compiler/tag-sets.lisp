@@ -46,19 +46,13 @@
   (_ '()))
 
 (defun new-tags (new-re old-re)
-  (cond
-    ((eq new-re (empty-set))
-     '())
-    ((eq (nullable old-re) (empty-set))
-     (loop with used = (used-tags new-re)
-           for assignment
-             in (set-difference (tags old-re) (tags new-re)
-                                :test #'equal)
-           for (variable replica nil) = assignment
-           when (member (list variable replica) used :test #'equal)
-             collect assignment))
-    (t
-     (tags old-re))))
+  (loop with used = (used-tags new-re)
+        for assignment
+          in (set-difference (tags old-re) (tags new-re)
+                             :test #'equal)
+        for (variable replica nil) = assignment
+        when (member (list variable replica) used :test #'equal)
+          collect assignment))
  
 (trivia:defun-match remove-tags (re)
   ((tag-set _) (empty-string))
@@ -78,7 +72,7 @@
   ((kleene r) (kleene (unique-tags r)))
   ((invert r) (invert (unique-tags r)))
   ((alpha r old-tags)
-   (unless (eq old-tags (empty-string))
+   (unless (eq old-tags (empty-set))
      (error "Can't make unique tags with history"))
-   (alpha (unique-tags r) (empty-string)))
+   (alpha (unique-tags r) old-tags))
   (_ re))

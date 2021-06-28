@@ -20,8 +20,9 @@
 (defun universal-set ()
   (literal (set-inverse (symbol-set))))
 (trivia:defpattern empty-set ()
-  `(trivia:guard (literal set)
-                 (set-null set)))
+  (alexandria:with-gensyms (set)
+    `(trivia:guard (literal ,set)
+                   (set-null ,set))))
 
 (define-type (empty-string)
   :printer (_ (write-string "ε" stream)))
@@ -45,7 +46,7 @@
                                       "P"
                                       (format nil "~{~a_~a~}" source))))))
 (define-type (alpha expression history)
-  :simplify (((alpha (empty-set) (empty-string)) (empty-set)))
+  :simplify (((alpha (empty-set) (empty-set)) (empty-set)))
   :printer ((alpha r n)
             (format stream "α[~a, ~a]" r n)))
 (define-type (grep match-vector prototype)

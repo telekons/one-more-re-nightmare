@@ -30,10 +30,7 @@
     ((alpha r old-tags)
      (let* ((r* (derivative r set))
             (nullable (nullable r*)))
-       (alpha r*
-              (if (eq nullable (empty-set))
-                  old-tags
-                  (join nullable old-tags)))))))
+       (alpha r* (either nullable old-tags))))))
 
 (defun derivative* (re sequence)
   (map 'nil

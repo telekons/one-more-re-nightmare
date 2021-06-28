@@ -17,4 +17,4 @@
   ((tag-set s)    (tag-set (gensym-position-assignments s)))
   ((invert r)     (invert (nullable r)))
   ((grep r _)  (nullable r))
-  ((alpha r _) (nullable r)))
+  ((alpha r history) (either (nullable r) history)))

@@ -1,5 +1,12 @@
 (in-package :one-more-re-nightmare)
 
+(defun make-search-machine (re)
+  (let* ((re (join (tag-set '((start 0 position)))
+                   (join re
+                         (tag-set '((end 0 position))))))
+         (history-tracking-re (alpha re (nullable re))))
+    (grep history-tracking-re history-tracking-re)))
+
 (defun compile-regular-expression (regular-expression
                                    &key (vector-type 'vector)
                                         (aref-generator (lambda (vector position)
@@ -7,6 +14,7 @@
   "Compile a function that will match the regular expression to a vector of type VECTOR-TYPE."
   (when (stringp regular-expression)
     (setf regular-expression (parse-regular-expression regular-expression)))
+  (setf regular-expression (make-search-machine regular-expression))
   (values (compile nil
                    (make-lambda-form (map 'vector #'first
                                           (tags regular-expression))
@@ -121,8 +129,8 @@
                '(return-from scan)
                `(progn
                   (setf this-start end)
-                  ,(generate-tags-code regular-expression
-                                       nu
+                  ,(generate-tags-code *compiler-state*
+                                       regular-expression
                                        (make-state :exit-map (tags nu))
                                        tag-names)
                   (funcall continuation this-start position)
