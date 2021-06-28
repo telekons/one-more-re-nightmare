@@ -1,5 +1,10 @@
 (in-package :one-more-re-nightmare)
 
+(trivia:defun-ematch gensym-history (history)
+  ((tag-set s)
+   (tag-set (gensym-position-assignments s)))
+  ((empty-set) (empty-set)))
+
 (defun derivative (re set)
   "Compute the derivative of a regular expression with regards to the set (i.e. the regular expression should be matched after a character in the set is matched)."
   (trivia:ematch re
@@ -30,7 +35,7 @@
     ((alpha r old-tags)
      (let* ((r* (derivative r set))
             (nullable (nullable r)))
-       (alpha r* (either nullable old-tags))))))
+       (alpha r* (either nullable (gensym-history old-tags)))))))
 
 (defun derivative* (re sequence)
   (map 'nil

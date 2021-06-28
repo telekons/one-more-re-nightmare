@@ -45,14 +45,25 @@
   ((alpha r _) (tags r))
   (_ '()))
 
-(defun new-tags (new-re old-re)
+(defun keep-used-assignments (new-re assignments)
   (loop with used = (used-tags new-re)
-        for assignment
-          in (set-difference (tags old-re) (tags new-re)
-                             :test #'equal)
+        for assignment in assignments
         for (variable replica nil) = assignment
         when (member (list variable replica) used :test #'equal)
           collect assignment))
+
+(defun new-tags (new-re old-re)
+  (let* ((*gensym-assignments?* nil))
+    (trivia:ematch (nullable old-re)
+      ((tag-set s) (keep-used-assignments new-re s))
+      ((empty-string) '())
+      (_
+       (loop with used = (used-tags new-re)
+             for assignment
+               in (set-difference (tags old-re) (tags new-re)
+                                  :test #'equal)
+             collect assignment into assignments
+             finally (return (keep-used-assignments new-re assignments)))))))
  
 (trivia:defun-match remove-tags (re)
   ((tag-set _) (empty-string))
