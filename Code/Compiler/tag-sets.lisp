@@ -42,7 +42,7 @@
     (trivia:match re
       ((tag-set s) s)
       ((or (either r s) (both r s) (join r s))
-       (append (tags r) (tags s)))
+       (union (tags r) (tags s) :test #'equal))
       ((or (kleene r) (invert r))
        (tags r))
       ((grep r _) (tags r))
