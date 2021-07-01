@@ -13,7 +13,8 @@
   ((%nullable :initform +uncomputed+ :accessor cached-nullable)
    (%used-tags :initform +uncomputed+ :accessor cached-used-tags)
    (%tags :initform +uncomputed+ :accessor cached-tags)
-   (%removed-tags :initform +uncomputed+ :accessor cached-removed-tags)))
+   (%removed-tags :initform +uncomputed+ :accessor cached-removed-tags)
+   (%has-tags-p :initform +uncomputed+ :accessor cached-has-tags-p)))
 
 (defmacro define-type ((name &rest slots) &key simplify hash-cons printer)
   (let ((variables (loop for slot in slots collect (gensym (symbol-name slot))))
