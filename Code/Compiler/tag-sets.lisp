@@ -57,13 +57,10 @@
     (trivia:ematch (nullable old-re)
       ((tag-set s) (keep-used-assignments new-re s))
       ((empty-string) '())
-      (_
-       (loop with used = (used-tags new-re)
-             for assignment
-               in (set-difference (tags old-re) (tags new-re)
-                                  :test #'equal)
-             collect assignment into assignments
-             finally (return (keep-used-assignments new-re assignments)))))))
+      ((empty-set)
+       (let ((assignments (set-difference (tags old-re) (tags new-re)
+                                          :test #'equal)))
+         (keep-used-assignments new-re assignments))))))
  
 (trivia:defun-match remove-tags (re)
   ((tag-set _) (empty-string))
