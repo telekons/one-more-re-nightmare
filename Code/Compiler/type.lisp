@@ -71,12 +71,23 @@
   (alexandria:once-only (object)
     (alexandria:with-gensyms (value)
       `(let ((,value (,accessor ,object)))
-         (if (and (eq ,value +uncomputed+) ,when)
-             (setf (,accessor ,object)
-                   (progn ,@body))
-             ,value)))))
+         (flet ((compute-the-damn-value ()
+                  ,@body))
+           (cond
+             ((not ,when)
+              (compute-the-damn-value))
+             ((eq ,value +uncomputed+)
+              (setf (,accessor ,object)
+                    (progn ,@body)))
+             (t
+              ,value)))))))
 
 (defmacro with-hash-consing-tables (() &body body)
   `(let ,(loop for name in *table-names*
                collect `(,name (make-hash-table :test 'equal)))
      ,@body))
+
+(defmacro clear-global-tables ()
+  "Set up global tables for testing."
+  `(setf ,@(loop for name in *table-names*
+                 append `(,name (make-hash-table :test 'equal)))))
