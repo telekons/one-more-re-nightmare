@@ -4,7 +4,8 @@
 
 (defun nullable (re)
   "(language-of (nullable RE)) = (language-of (both RE (empty-string)))"
-  (with-slot-consing (cached-nullable re)
+  ;; Don't really need to cache the non-gensymed version hopefully.
+  (with-slot-consing (cached-nullable re :when *gensym-assignments?*)
     (trivia:ematch re
       ((empty-string) (empty-string))
       ((literal _)    (empty-set))

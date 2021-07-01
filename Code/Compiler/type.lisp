@@ -67,11 +67,11 @@
              (setf (gethash ,key ,table)
                    (progn ,@body)))))))
 
-(defmacro with-slot-consing ((accessor object) &body body)
+(defmacro with-slot-consing ((accessor object &key (when 't)) &body body)
   (alexandria:once-only (object)
     (alexandria:with-gensyms (value)
       `(let ((,value (,accessor ,object)))
-         (if (eq ,value +uncomputed+)
+         (if (and (eq ,value +uncomputed+) ,when)
              (setf (,accessor ,object)
                    (progn ,@body))
              ,value)))))
