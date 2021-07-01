@@ -1,10 +1,17 @@
 (in-package :one-more-re-nightmare)
 
-(defvar *instances* (make-hash-table :test 'eql))
+(defvar *table-names* '())
+
+(defmacro define-hash-consing-table (name)
+  `(progn
+     (defvar ,name)
+     (pushnew ',name *table-names*)
+     ',name))
 
 (defmacro define-type ((name &rest slots) &key simplify hash-cons printer)
   (let ((variables (loop for slot in slots collect (gensym (symbol-name slot))))
-        (internal-creator (alexandria:format-symbol nil "%~a" name)))
+        (internal-creator (alexandria:format-symbol nil "%~a" name))
+        (table-name (gensym (symbol-name name))))
     `(progn
        (defclass ,name () ,slots)
        (trivia:defpattern ,name ,variables
@@ -14,9 +21,8 @@
                ,@(loop for slot in slots
                        for variable in variables
                        appending `((list 'slot-value instance-name '',slot) ,variable)))))
-       (setf (gethash ',name *instances*)
-             (trivial-garbage:make-weak-hash-table :weakness :value
-                                                   :test 'equal))
+       (define-hash-consing-table ,name)
+       
        (defun ,internal-creator ,slots
          (let ((instance (make-instance ',name)))
            ,@(loop for slot in slots
@@ -35,12 +41,24 @@
                    collect `((list ,@pattern) ,replacement))
            ,@(loop for ((nil . pattern) (nil . replacement)) in hash-cons
                    collect `((list ,@pattern)
-                             (or (gethash (list ,@replacement)
-                                          (gethash ',name *instances*))
+                             (or (gethash (list ,@replacement) ,table-name)
                                  (trivia.next:next))))
-           (_ (or (gethash (list ,@slots)
-                           (gethash ',name *instances*))
-                  (setf (gethash (list ,@slots)
-                                 (gethash ',name *instances*))
+           (_ (or (gethash (list ,@slots) ,table-name)
+                  (setf (gethash (list ,@slots) ,table-name)
                         (,internal-creator ,@slots)))))))))
 (indent:define-indentation define-type (4 &body))
+
+(defmacro with-hash-consing ((table key) &body body)
+  (alexandria:once-only (table key)
+    (alexandria:with-gensyms (value present?)
+      `(multiple-value-bind (,value ,present?)
+           (gethash ,key ,table)
+         (if ,present?
+             ,value
+             (setf (gethash ,key ,table)
+                   (progn ,@body)))))))
+
+(defmacro with-hash-consing-tables (() &body body)
+  `(let ,(loop for name in *table-names*
+               collect `(,name (make-hash-table :test 'equal)))
+     ,@body))
