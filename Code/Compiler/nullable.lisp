@@ -2,11 +2,9 @@
 
 (defvar *gensym-assignments?* t)
 
-(define-hash-consing-table *nullable*)
-
 (defun nullable (re)
   "(language-of (nullable RE)) = (language-of (both RE (empty-string)))"
-  (with-hash-consing (*nullable* re)
+  (with-slot-consing (cached-nullable re)
     (trivia:ematch re
       ((empty-string) (empty-string))
       ((literal _)    (empty-set))

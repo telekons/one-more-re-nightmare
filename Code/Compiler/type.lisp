@@ -8,12 +8,20 @@
      (pushnew ',name *table-names*)
      ',name))
 
+(defconstant +uncomputed+ '+uncomputed+)
+(defclass regular-expression ()
+  ((%nullable :initform +uncomputed+ :accessor cached-nullable)
+   (%used-tags :initform +uncomputed+ :accessor cached-used-tags)
+   (%tags :initform +uncomputed+ :accessor cached-tags)
+   (%removed-tags :initform +uncomputed+ :accessor cached-removed-tags)))
+
 (defmacro define-type ((name &rest slots) &key simplify hash-cons printer)
   (let ((variables (loop for slot in slots collect (gensym (symbol-name slot))))
         (internal-creator (alexandria:format-symbol nil "%~a" name))
-        (table-name (gensym (symbol-name name))))
+        (table-name (alexandria:format-symbol '#:one-more-re-nightmare
+                                              "*~A-TABLE*" name)))
     `(progn
-       (defclass ,name () ,slots)
+       (defclass ,name (regular-expression) ,slots)
        (trivia:defpattern ,name ,variables
           (alexandria:with-gensyms (instance-name)
             (list 'trivia:guard1 (list instance-name ':type ',name)
@@ -21,7 +29,7 @@
                ,@(loop for slot in slots
                        for variable in variables
                        appending `((list 'slot-value instance-name '',slot) ,variable)))))
-       (define-hash-consing-table ,name)
+       (define-hash-consing-table ,table-name)
        
        (defun ,internal-creator ,slots
          (let ((instance (make-instance ',name)))
@@ -57,6 +65,15 @@
              ,value
              (setf (gethash ,key ,table)
                    (progn ,@body)))))))
+
+(defmacro with-slot-consing ((accessor object) &body body)
+  (alexandria:once-only (object)
+    (alexandria:with-gensyms (value)
+      `(let ((,value (,accessor ,object)))
+         (if (eq ,value +uncomputed+)
+             (setf (,accessor ,object)
+                   (progn ,@body))
+             ,value)))))
 
 (defmacro with-hash-consing-tables (() &body body)
   `(let ,(loop for name in *table-names*
