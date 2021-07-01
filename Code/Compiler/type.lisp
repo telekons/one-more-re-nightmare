@@ -78,7 +78,7 @@
               (compute-the-damn-value))
              ((eq ,value +uncomputed+)
               (setf (,accessor ,object)
-                    (progn ,@body)))
+                    (compute-the-damn-value)))
              (t
               ,value)))))))
 
