@@ -2,10 +2,19 @@
 
 (defvar *gensym-assignments?* t)
 
+(defun cached-nullable* (re)
+  (if *gensym-assignments?*
+      (cached-nullable re)
+      (cached-nullable-no-gensym re)))
+
+(defun (setf cached-nullable*) (value re)
+  (if *gensym-assignments?*
+      (setf (cached-nullable re) value)
+      (setf (cached-nullable-no-gensym re) value)))
+
 (defun nullable (re)
   "(language-of (nullable RE)) = (language-of (both RE (empty-string)))"
-  ;; Don't really need to cache the non-gensymed version hopefully.
-  (with-slot-consing (cached-nullable re :when *gensym-assignments?*)
+  (with-slot-consing (cached-nullable* re)
     (trivia:ematch re
       ((empty-string) (empty-string))
       ((literal _)    (empty-set))

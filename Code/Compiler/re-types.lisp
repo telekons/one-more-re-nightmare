@@ -120,6 +120,9 @@
              ((join (tag-set s) (either p r))
               (either (join (tag-set s) p)
                       (join (tag-set s) r)))
+             ((join (join (tag-set s1) r) s)
+              ;; Rotate so that a TAG-SET is always at the start.
+              (join (tag-set s1) (join r s)))
              ((join (tag-set s1) (join (tag-set s2) r))
               (join (tag-set (merge-tag-sets s1 s2)) r))
              ((join (tag-set s1) (tag-set s2))

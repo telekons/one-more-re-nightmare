@@ -11,6 +11,7 @@
 (defconstant +uncomputed+ '+uncomputed+)
 (defclass regular-expression ()
   ((%nullable :initform +uncomputed+ :accessor cached-nullable)
+   (%nullable-no-gensym :initform +uncomputed+ :accessor cached-nullable-no-gensym)
    (%used-tags :initform +uncomputed+ :accessor cached-used-tags)
    (%tags :initform +uncomputed+ :accessor cached-tags)
    (%removed-tags :initform +uncomputed+ :accessor cached-removed-tags)

@@ -8,7 +8,10 @@
 (defun gensym-position-assignments (set)
   "Replicate any assignments, turning T_n <- s for all s into T^r_n <- T_n for some arbitrary r"
   (loop for (variable replica source) in set
-        collect (list variable (tag-gensym) (list variable replica))))
+        if (eql source 'position)
+          collect (list variable (tag-gensym) (list variable replica))
+        else
+          collect (list variable replica (list variable replica))))
 
 (defun unique-assignments (set)
   "Make assignments unique, turning T_n <- s for all s into T^r_n <- s"
@@ -17,10 +20,7 @@
 
 (defun merge-tag-sets (set1 set2)
   (append (loop for (variable replica source) in set1
-                unless (find (list variable replica) set2
-                             :key (lambda (v2)
-                                    (list (first v2) (second v2)))
-                             :test #'equal)
+                unless (find variable set2 :key #'first)
                   collect (list variable replica source))
           set2))
 
