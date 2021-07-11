@@ -10,6 +10,7 @@
                              (:file "derivative")
                              (:file "derivative-classes")
                              (:file "empty")
+                             (:file "effects")
                              (:file "similar")
                              (:file "tag-sets")
                              (:file "make-dfa")

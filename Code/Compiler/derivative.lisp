@@ -42,7 +42,7 @@
            (format t "~&~a~&  ~:c ~a"
                    re
                    element
-                   (new-tags new-re re))
+                   (effects re))
            (setf re new-re)))
        sequence)
   re)
