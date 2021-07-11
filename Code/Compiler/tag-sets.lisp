@@ -11,7 +11,7 @@
         if (eql source 'position)
           collect (list variable (tag-gensym) (list variable replica))
         else
-          collect (list variable replica (list variable replica))))
+          collect (list variable (tag-gensym) (list variable replica))))
 
 (defun unique-assignments (set)
   "Make assignments unique, turning T_n <- s for all s into T^r_n <- s"
