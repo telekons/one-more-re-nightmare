@@ -12,16 +12,18 @@
                                         (aref-generator (lambda (vector position)
                                                           `(aref ,vector ,position))))
   "Compile a function that will match the regular expression to a vector of type VECTOR-TYPE."
-  (when (stringp regular-expression)
-    (setf regular-expression (parse-regular-expression regular-expression)))
-  (setf regular-expression (make-search-machine regular-expression))
-  (values (compile nil
-                   (make-lambda-form (map 'vector #'first
-                                          (tags regular-expression))
-                                     regular-expression
-                                     vector-type
-                                     aref-generator))
-          (length (tags regular-expression))))
+  (with-hash-consing-tables ()
+    (let ((*tag-gensym-counter* 0))
+      (when (stringp regular-expression)
+        (setf regular-expression (parse-regular-expression regular-expression)))
+      (setf regular-expression (make-search-machine regular-expression))
+      (values (compile nil
+                       (make-lambda-form (map 'vector #'first
+                                              (tags regular-expression))
+                                         regular-expression
+                                         vector-type
+                                         aref-generator))
+              (length (tags regular-expression))))))
 
 (defstruct tagbody-state
   name code)

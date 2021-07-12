@@ -2,8 +2,8 @@
 
 (defclass symbol-set () ())
 
-(defvar *positives*
-  (trivial-garbage:make-weak-hash-table :test 'equal :weakness :value))
+(define-hash-consing-table *positives*)
+
 (defclass positive-symbol-set (symbol-set)
   ((elements :initarg :elements :reader elements))
   (:documentation "A set represented by the elements it contains."))
@@ -17,8 +17,8 @@
       (setf (gethash initargs *positives*)
             (call-next-method))))
 
-(defvar *negatives*
-  (trivial-garbage:make-weak-hash-table :test 'equal :weakness :value))
+(define-hash-consing-table *negatives*)
+
 (defclass negative-symbol-set (symbol-set)
   ((elements :initarg :elements :reader elements))
   (:documentation "A set represented by the elements it does not contain."))
@@ -84,13 +84,6 @@
   (:method ((set negative-symbol-set)) nil)
   (:method ((set positive-symbol-set))
     (null (elements set))))
-
-(defgeneric symbol-set-equal (set1 set2)
-  (:method (s1 s2) nil)
-  (:method ((s1 positive-symbol-set) (s2 positive-symbol-set))
-    (set-equal (elements s1) (elements s2)))
-  (:method ((s1 negative-symbol-set) (s2 negative-symbol-set))
-    (set-equal (elements s1) (elements s2))))
 
 (defun symbol-set-difference (set1 set2)
   (set-intersection set1 (set-inverse set2)))

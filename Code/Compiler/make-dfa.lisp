@@ -23,7 +23,7 @@
     (let ((subs (similar state old-state)))
       (unless (null subs)
         (win old-state subs)))
-    (loop for other-state being the hash-keys of states
+    (loop for other-state in states
           for substitutions = (similar state other-state)
           for used = (used-tags other-state)
           unless (null substitutions)
@@ -52,12 +52,17 @@
              (set-union (transition-class same-transition)
                         class))))))
 
+(trivia:defun-match re-stopped-p (re)
+  ((alpha (empty-set) _) t)
+  ((empty-set) t)
+  (_ nil))
+
 (defun make-dfa-from-expressions (expressions)
   (let ((dfa    (make-hash-table))
         (states (make-hash-table))
+        (possibly-similar-states (make-hash-table))
         (work-list expressions)
         (*tag-gensym-counter* 0))
-    (setf (gethash (empty-set) dfa) '())
     (setf (gethash (empty-string) states)
           (make-state
            :final-p t
@@ -67,15 +72,18 @@
       (let* ((state  (pop work-list))
              (classes (derivative-classes state)))
         (cond
-          ((re-empty-p state) nil)
+          ((or (re-stopped-p state) (re-empty-p state))
+           nil)
           (t
            (dolist (class classes)
              (unless (set-null class)
                (let* ((next-state (derivative state class))
-                      (tags-to-set (new-tags next-state state))
+                      (tags-to-set (effects state))
                       (increment-p t))
                  (multiple-value-bind (other-state transformation)
-                     (find-similar-state states state next-state)
+                     (find-similar-state
+                      (gethash (remove-tags next-state) possibly-similar-states '())
+                      state next-state)
                    (cond
                      ((null other-state)
                       (unless (nth-value 1 (gethash next-state dfa))
@@ -90,7 +98,8 @@
         (let ((n (nullable state)))
           (setf (gethash state states)
                 (make-state :final-p (not (eq n (empty-set)))
-                            :exit-map (tags n))))))
+                            :exit-map (tags n)))
+          (push state (gethash (remove-tags state) possibly-similar-states)))))
     (values dfa states)))
 
 (defun make-dfa-from-expression (expression)
