@@ -19,4 +19,6 @@
           :test #'equal))
   ((invert r) (effects r))
   ((kleene r) (effects r))
+  ((alpha e _) (effects e))
+  ((grep v _) (effects v))
   (_ '()))

@@ -78,7 +78,9 @@
            (dolist (class classes)
              (unless (set-null class)
                (let* ((next-state (derivative state class))
-                      (tags-to-set (effects state))
+                      (tags-to-set (keep-used-assignments
+                                    next-state
+                                    (effects state)))
                       (increment-p t))
                  (multiple-value-bind (other-state transformation)
                      (find-similar-state

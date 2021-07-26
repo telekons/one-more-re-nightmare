@@ -36,13 +36,30 @@
          (alpha r* (either nullable old-tags)))))))
 
 (defun derivative* (re sequence)
-  (map 'nil
-       (lambda (element)
-         (let ((new-re (derivative re (symbol-set element))))
-           (format t "~&~a~&  ~:c ~a"
-                   re
-                   element
-                   (effects re))
-           (setf re new-re)))
-       sequence)
-  re)
+  (let ((variables (make-hash-table :test 'equal))
+        (position 0))
+    (flet ((run-effects (effects)
+             (loop for (variable replica source) in effects
+                   for value = (if (eql source 'position)
+                                   position
+                                   (gethash source variables))
+                   do (setf (gethash (list variable replica) variables)
+                            value))))
+      (map 'nil
+           (lambda (element)
+             (let* ((new-re (derivative re (symbol-set element)))
+                    (effects (effects re)))
+               (format t "~&~a~&  ~:c ~a"
+                       re element effects)
+               (setf re new-re)
+               (run-effects effects)
+               (incf position)))
+           sequence)
+      (run-effects (effects re))
+      (values re
+              (trivia:match (nullable re)
+                ((tag-set s)
+                 (loop for (name nil source) in s
+                       collect (cons name (gethash source variables))))
+                ((empty-string) '())
+                ((empty-set) '()))))))
