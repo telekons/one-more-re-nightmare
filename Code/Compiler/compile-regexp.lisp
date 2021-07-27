@@ -17,13 +17,14 @@
       (when (stringp regular-expression)
         (setf regular-expression (parse-regular-expression regular-expression)))
       (setf regular-expression (make-search-machine regular-expression))
-      (values (compile nil
-                       (make-lambda-form (map 'vector #'first
-                                              (tags regular-expression))
-                                         regular-expression
-                                         vector-type
-                                         aref-generator))
-              (length (tags regular-expression))))))
+      (let ((tags (map 'vector #'first
+                       (tags regular-expression))))
+        (values (compile nil
+                         (make-lambda-form tags
+                                           regular-expression
+                                           vector-type
+                                           aref-generator))
+                tags)))))
 
 (defstruct tagbody-state
   name code)

@@ -2,7 +2,9 @@
 
 (trivia:defun-match has-literals-p (re)
   ((literal _) t)
-  ((or (join r s) (either r s) (both r s))
+  ((either r s)
+   (and (has-literals-p r) (has-literals-p s)))
+  ((or (join r s) (both r s))
    (or (has-literals-p r) (has-literals-p s)))
   ((or (invert r)) (has-literals-p r))
   (_ nil))
