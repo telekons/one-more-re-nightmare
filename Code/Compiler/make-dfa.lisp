@@ -91,8 +91,7 @@
                       (unless (nth-value 1 (gethash next-state dfa))
                         (pushnew next-state work-list)))
                      (t                 ; Reuse this state.
-                      (setf tags-to-set (merge-tag-sets tags-to-set
-                                                        transformation)
+                      (setf tags-to-set (append tags-to-set transformation)
                             next-state  other-state))))
                  (add-transition class
                                  state next-state
@@ -106,14 +105,3 @@
 
 (defun make-dfa-from-expression (expression)
   (make-dfa-from-expressions (list expression)))
-
-(defun print-dfa (dfa)
-  (maphash (lambda (state transitions)
-             (dolist (transition transitions)
-               (format t "~&\"~s\"~&  -> \"~s\"[label=\"~s ~s\"]"
-                       state
-                       (transition-next-state transition)
-                       (transition-class transition)
-                       (tag-set
-                        (transition-tags-to-set transition)))))
-           dfa))

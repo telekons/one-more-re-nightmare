@@ -24,6 +24,13 @@
     `(trivia:guard (literal ,set)
                    (set-null ,set))))
 
+(defvar *subscripts* "₀₁₂₃₄₅₆₇₈₉")
+(defun subscripts (number)
+  (map 'string
+       (lambda (char)
+         (aref *subscripts* (digit-char-p char)))
+       (princ-to-string number)))
+
 (define-type (empty-string)
   :printer (_ (write-string "ε" stream)))
 (define-type (kleene r)
@@ -41,10 +48,14 @@
                           if (zerop replica)
                             collect variable
                           else
-                            collect (format nil "~a_~a" variable replica)
+                            collect (format nil "~a~a"
+                                            variable
+                                            (subscripts replica))
                           collect (if (eql source 'position)
                                       "P"
-                                      (format nil "~{~a_~a~}" source))))))
+                                      (format nil "~a~a"
+                                              (first source)
+                                              (subscripts (second source))))))))
 (define-type (alpha expression history)
   :simplify (((alpha (empty-set) (empty-set)) (empty-set)))
   :printer ((alpha r n)

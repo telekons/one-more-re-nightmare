@@ -83,7 +83,7 @@
   (with-slot-consing (cached-has-tags-p re)
     (trivia:match re
       ((tag-set _) t)
-      ((or (either r s) (both r s) (join r s) (alpha r s))
+      ((or (either r s) (both r s) (join r s) (alpha r s) (grep r s))
        (or (has-tags-p r) (has-tags-p s)))
       ((or (kleene r) (invert r))
        (has-tags-p r))
