@@ -13,9 +13,8 @@
                              (:file "effects")
                              (:file "similar")
                              (:file "tag-sets")
-                             (:file "make-dfa")
-                             (:file "prefix-scanner")
-                             (:file "compile-regexp")))
+                             (:file "make-dfa")))
+               #+(or)
                (:module "Boyer-Moore-Horspool"
                 :components ((:file "prefix")
                              (:file "boyer-moore-horspool")))
