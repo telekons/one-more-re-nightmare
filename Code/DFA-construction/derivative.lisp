@@ -14,7 +14,7 @@
       ((join r s)
        (let ((r* (derivative r set))
              (s* (derivative s set)))
-         (either (join r* s) (join (nullable r) s*))))
+         (either (join r* (unique-tags s)) (join (nullable r) s*))))
       ((kleene r)
        (join (derivative r set) (kleene (unique-tags r))))
       ((either r s)

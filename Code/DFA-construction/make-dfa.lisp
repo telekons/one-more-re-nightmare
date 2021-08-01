@@ -3,8 +3,7 @@
 (defstruct transition
   class
   next-state
-  tags-to-set
-  increment-position-p)
+  tags-to-set)
 
 (defstruct state
   final-p
@@ -29,23 +28,20 @@
           unless (null substitutions)
             do (win other-state substitutions))))
 
-(defun add-transition (class last-state next-state tags-to-set increment-p dfa)
+(defun add-transition (class last-state next-state tags-to-set dfa)
   (let* ((old-transitions (gethash last-state dfa))
          (same-transition
            (find-if (lambda (transition)
                       (and
                        (equal tags-to-set (transition-tags-to-set transition))
-                       (eq next-state (transition-next-state transition))
-                       (eq increment-p
-                           (transition-increment-position-p transition))))
+                       (eq next-state (transition-next-state transition))))
                     old-transitions)))
     (cond
       ((null same-transition)
        (push (make-transition
               :class class
               :next-state next-state
-              :tags-to-set tags-to-set
-              :increment-position-p increment-p)
+              :tags-to-set tags-to-set)
              (gethash last-state dfa)))
       (t
        (setf (transition-class same-transition)
@@ -63,10 +59,6 @@
         (possibly-similar-states (make-hash-table))
         (work-list expressions)
         (*tag-gensym-counter* 0))
-    (setf (gethash (empty-string) states)
-          (make-state
-           :final-p t
-           :exit-map '()))
     (loop
       (when (null work-list) (return))
       (let* ((state  (pop work-list))
@@ -80,8 +72,7 @@
                (let* ((next-state (derivative state class))
                       (tags-to-set (keep-used-assignments
                                     next-state
-                                    (effects state)))
-                      (increment-p t))
+                                    (effects state))))
                  (multiple-value-bind (other-state transformation)
                      (find-similar-state
                       (gethash (remove-tags next-state) possibly-similar-states '())
@@ -95,12 +86,13 @@
                             next-state  other-state))))
                  (add-transition class
                                  state next-state
-                                 tags-to-set increment-p dfa))))))
-        (let ((n (nullable state)))
-          (setf (gethash state states)
-                (make-state :final-p (not (eq n (empty-set)))
-                            :exit-map (tags n)))
-          (push state (gethash (remove-tags state) possibly-similar-states)))))
+                                 tags-to-set dfa))))))
+        (unless (eq state (empty-set))
+          (let ((n (nullable state)))
+            (setf (gethash state states)
+                  (make-state :final-p (not (eq n (empty-set)))
+                              :exit-map (mapcar #'third (tags n))))
+            (push state (gethash (remove-tags state) possibly-similar-states))))))
     (values dfa states)))
 
 (defun make-dfa-from-expression (expression)

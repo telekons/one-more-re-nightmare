@@ -2,7 +2,7 @@
   :depends-on (:trivia :alexandria :babel :trivial-garbage :esrap :trivial-indent)
   :serial t
   :components ((:file "package")
-               (:module "Compiler"
+               (:module "DFA-construction"
                 :components ((:file "type")
                              (:file "sets")
                              (:file "re-types")
