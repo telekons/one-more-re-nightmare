@@ -14,7 +14,16 @@
       ((join r s)
        (let ((r* (derivative r set))
              (s* (derivative s set)))
-         (either (join r* (unique-tags s)) (join (nullable r) s*))))
+         (cond
+           ((eq r* (empty-set))
+            ;; Something like [...]A doesn't need gensym'ing.
+            (let ((*gensym-assignments?* nil))
+              (join (nullable r) s*)))
+           ((not (has-tags-p r*))
+            ;; Ditto for A[...]
+            (either (join r* s) (join (nullable r) s*)))
+           (t
+            (either (join r* (unique-tags s)) (join (nullable r) s*))))))
       ((kleene r)
        (join (derivative r set) (kleene (unique-tags r))))
       ((either r s)

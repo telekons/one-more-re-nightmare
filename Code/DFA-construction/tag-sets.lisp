@@ -8,10 +8,11 @@
 (defun gensym-position-assignments (set)
   "Replicate any assignments, turning T_n <- s for all s into T^r_n <- T_n for some arbitrary r"
   (loop for (variable replica source) in set
-        if (eql source 'position)
-          collect (list variable (tag-gensym) (list variable replica))
-        else
-          collect (list variable (tag-gensym) (list variable replica))))
+        collect (cond
+                  ((not *gensym-assignments?*)
+                   (list variable replica (list variable replica)))
+                  (t
+                   (list variable (tag-gensym) (list variable replica))))))
 
 (defun unique-assignments (set)
   "Make assignments unique, turning T_n <- s for all s into T^r_n <- s"

@@ -28,9 +28,7 @@
                             (empty-string)
                             r*)))
       ((both r s)     (both (nullable r) (nullable s)))
-      ((tag-set s)    (tag-set (if *gensym-assignments?*
-                                   (gensym-position-assignments s)
-                                   s)))
+      ((tag-set s)    (tag-set (gensym-position-assignments s)))
       ((invert r)     (invert (nullable r)))
       ((grep r _)     (nullable r))
       ((alpha r history) (either (nullable r) history)))))
