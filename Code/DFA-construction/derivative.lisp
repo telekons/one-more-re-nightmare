@@ -71,4 +71,5 @@
                  (loop for (name nil source) in s
                        collect (cons name (gethash source variables))))
                 ((empty-string) '())
-                ((empty-set) '()))))))
+                ((empty-set) '()))
+              (nullable re)))))
