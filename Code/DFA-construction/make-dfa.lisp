@@ -6,7 +6,6 @@
   tags-to-set)
 
 (defstruct state
-  final-p
   exit-map)
 
 (defun find-similar-state (states old-state state)
@@ -90,8 +89,7 @@
         (unless (eq state (empty-set))
           (let ((n (nullable state)))
             (setf (gethash state states)
-                  (make-state :final-p (not (eq n (empty-set)))
-                              :exit-map (mapcar #'third (tags n))))
+                  (make-state :exit-map (mapcar #'third (tags n))))
             (push state (gethash (remove-tags state) possibly-similar-states))))))
     (values dfa states)))
 

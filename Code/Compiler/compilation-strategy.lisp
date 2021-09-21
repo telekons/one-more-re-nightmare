@@ -37,9 +37,9 @@
   `(go ,(find-state-name (initial-state strategy))))
 
 (defmethod initial-states ((strategy scan-everything))
-  (list (initial-state strategy)))
+  (list (make-search-machine (initial-state strategy))))
 
 (defmethod make-complete-form (strategy variables declarations body)
   `(prog* ,variables
-      (declare ,declarations)
+      (declare ,@declarations)
       ,@body))
