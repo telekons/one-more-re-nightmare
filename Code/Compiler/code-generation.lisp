@@ -43,10 +43,11 @@
     (let ((initial-states (initial-states strategy)))
       (multiple-value-bind (dfa states)
           (make-dfa-from-expressions initial-states)
-        (let ((form (make-body-from-dfa dfa states)))
-          (values (alexandria:hash-table-keys
-                   (variable-names *compiler-state*))
-                  '()
+        (let* ((form (make-body-from-dfa dfa states))
+               (variables (alexandria:hash-table-values
+                           (variable-names *compiler-state*))))
+          (values (loop for variable in variables collect `(,variable 0))
+                  `((fixnum ,@variables))
                   form))))))
 
 (defun make-body-from-dfa (dfa states)
@@ -60,30 +61,46 @@
                          ,@(loop for transition in transitions
                                  collect `(,(make-test-form (transition-class transition)
                                                             'value)
-                                           ,(transition-code transition states)))))
+                                           ,(transition-code state transition states)))))
                      ,(if (eq (empty-set) (nullable state))
                           `(return)
                           `(progn
-                             (win ,(state-exit-map state-info))
+                             (win ,@(state-exit-map state-info))
                              (return))))))
 
-(defun transition-code (transition states)
+(defun setf-from-assignments (assignments)
+  (loop for (variable replica source)
+          in assignments
+        unless (equal (list variable replica) source)
+          collect `(setf ,(find-variable-name
+                           (list variable replica))
+                         ,(find-variable-name source))))
+
+(defun find-in-map (variable-name map)
+  (let ((variable (find variable-name map :key #'first)))
+    (if (null variable)
+        (error "~s not in the map ~s" variable-name map)
+        (find-variable-name variable))))
+
+(defun transition-code (previous-state transition states)
   (let* ((next-state (transition-next-state transition))
          (state-info (gethash next-state states)))
     (cond
-      ((eq next-state (empty-set))
-       `(fail))
+      ((re-stopped-p next-state)
+       (if (eq (nullable previous-state) (empty-set))
+           `(fail)
+           `(progn
+              ,@(setf-from-assignments
+                 (transition-tags-to-set transition))
+              (win ,@(state-exit-map state-info))
+              (restart ,(find-in-map 'end (state-exit-map state-info))))))
       ((re-empty-p next-state)
        `(progn
-          (win ,(state-exit-map state-info))
-          (restart)))
+          (win ,@(state-exit-map state-info))
+          (restart position)))
       (t
        `(progn
-          ,@(loop for (variable replica source)
-                    in (transition-tags-to-set transition)
-                  unless (equal (list variable replica) source)
-                    collect `(setf ,(find-variable-name
-                                     (list variable replica))
-                                   ,(find-variable-name source)))
+          ,@(setf-from-assignments
+             (transition-tags-to-set transition))
           (incf position)
           (go ,(find-state-name next-state)))))))

@@ -24,7 +24,10 @@
   ;; We add an ALPHA wrapper to store the last end point when we
   ;; succeed but have repetition, and a GREP wrapper to make sure we
   ;; continue when we fail to match.
-  (let ((a (alpha expression (empty-set))))
+  (let ((a (alpha (join (tag-set '((start 0 position)))
+                        (join expression
+                              (tag-set '((end 0 position)))))
+                  (empty-set))))
     (grep a a)))
 
 (defmethod pre-process-re ((strategy scan-everything) expression)
