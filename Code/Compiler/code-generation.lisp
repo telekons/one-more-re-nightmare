@@ -65,11 +65,6 @@
                   `((fixnum start position ,@variables))
                   form))))))
 
-(defun win-locations (exit-map)
-  (loop for name in exit-map
-        for (variable nil) = name
-        collect `(,variable ,(find-variable-name name))))
-
 (defun make-body-from-dfa (dfa states)
   (loop for state       being the hash-keys of dfa
         for transitions being the hash-values of dfa
@@ -85,6 +80,8 @@
                                            ,(transition-code state transition states)))))
                      ,(if (eq (empty-set) nullable)
                           `(return)
+                          ;; We hit EOF and this state is nullable, so
+                          ;; succeed with what we got so far.
                           `(progn
                              ,@(setf-from-assignments
                                 (keep-used-assignments
@@ -93,20 +90,6 @@
                              (win ,@(win-locations (state-exit-map state-info)))
                              (return))))))
 
-(defun setf-from-assignments (assignments)
-  (loop for (variable replica source)
-          in assignments
-        unless (equal (list variable replica) source)
-          collect `(setf ,(find-variable-name
-                           (list variable replica))
-                         ,(find-variable-name source))))
-
-(defun find-in-map (variable-name map)
-  (let ((variable (find variable-name map :key #'first)))
-    (if (null variable)
-        (error "~s not in the map ~s" variable-name map)
-        (find-variable-name variable))))
-
 (defun transition-code (previous-state transition states)
   (let* ((next-state (transition-next-state transition))
          (state-info (gethash next-state states)))
@@ -114,6 +97,8 @@
       ((re-stopped-p next-state)
        (if (eq (nullable previous-state) (empty-set))
            `(restart start)
+           ;; Similarly to hitting EOF, if this state is nullable then
+           ;; we can succeed with what we got.
            `(progn
               ,@(setf-from-assignments
                  (transition-tags-to-set transition))
@@ -135,17 +120,21 @@
           (incf position)
           (go ,(find-state-name next-state)))))))
 
-(defmethod macros-for-strategy append ((strategy scan-everything))
-  '((restart (next-position)
-     `(progn
-        (if (= ,next-position start)
-            (setf start (1+ start))
-            (setf start ,next-position))
-        (go 1)))))
+(defun win-locations (exit-map)
+  (loop for name in exit-map
+        for (variable nil) = name
+        collect `(,variable ,(find-variable-name name)))
 
-(defmethod macros-for-strategy append ((strategy call-continuation))
-  '((win (&rest variables)
-     `(funcall continuation
-       (list
-        ,@(loop for (name variable) in variables
-                collect `(list ',name ,variable)))))))
+(defun setf-from-assignments (assignments)
+  (loop for (variable replica source)
+          in assignments
+        unless (equal (list variable replica) source)
+          collect `(setf ,(find-variable-name
+                           (list variable replica))
+                         ,(find-variable-name source))))
+
+(defun find-in-map (variable-name map)
+  (let ((variable (find variable-name map :key #'first)))
+    (if (null variable)
+        (error "~s not in the map ~s" variable-name map)
+        (find-variable-name variable))))

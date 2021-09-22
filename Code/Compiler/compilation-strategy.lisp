@@ -45,5 +45,20 @@
 (defmethod initial-states ((strategy scan-everything) expression)
   (list (make-search-machine expression)))
 
+(defmethod macros-for-strategy append ((strategy scan-everything))
+  '((restart (next-position)
+     `(progn
+        (if (= ,next-position start)
+            (setf start (1+ start))
+            (setf start ,next-position))
+        (go 1)))))
+
+(defmethod macros-for-strategy append ((strategy call-continuation))
+  '((win (&rest variables)
+     `(funcall continuation
+       (list
+        ,@(loop for (name variable) in variables
+                collect `(list ',name ,variable)))))))
+
 (defmethod lambda-list ((strategy call-continuation))
   '(vector start end continuation))

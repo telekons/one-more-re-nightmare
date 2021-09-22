@@ -1,6 +1,6 @@
 (asdf:defsystem :one-more-re-nightmare
   :depends-on (:trivia :alexandria :babel
-               :trivial-garbage :esrap :trivial-indent
+               :esrap :trivial-indent
                :dynamic-mixins)
   :serial t
   :components ((:file "package")
