@@ -10,15 +10,24 @@
   (:documentation "Generate a form to insert when transitioning to the (EMPTY-SET) state."))
 (defgeneric success-code (strategy)
   (:documentation "Generate a form to insert to keep searching after successfully matching."))
-(defgeneric initial-states (strategy)
+(defgeneric initial-states (strategy expression)
   (:documentation "Compute a list of states to start compiling from."))
-(defgeneric make-complete-form (strategy variables declarations body)
-  (:documentation "Create a Lisp form with a list of variable bindings (as by LET*), a list of declarations and TAGBODY body."))
+(defgeneric macros-for-strategy (strategy)
+  (:documentation "A list of macros (at least using including WIN and RESTART) to use for compilation.")
+  (:method-combination append))
+(defgeneric lambda-list (strategy)
+  (:documentation "The lambda list of the function to generate."))
 
 (defclass scan-everything (strategy)
-  ((initial-state :initarg :initial-state
-                  :reader initial-state))
+  ()
   (:documentation "A compilation strategy which runs a regular expression vector over every position."))
+
+(defclass call-continuation (strategy)
+  ()
+  (:documentation "A compilation strategy which calls a continuation when a match is found."))
+
+(defvar *default-strategy*
+  (make-instance (dynamic-mixins:mix 'scan-everything 'call-continuation)))
 
 (defun make-search-machine (expression)
   ;; We add an ALPHA wrapper to store the last end point when we
@@ -33,16 +42,8 @@
 (defmethod pre-process-re ((strategy scan-everything) expression)
   (make-search-machine expression))
 
-(defmethod lossage-code ((strategy scan-everything))
-  (error "We generate a RE that never fails, so LOSSAGE-CODE shouldn't ever be called."))
+(defmethod initial-states ((strategy scan-everything) expression)
+  (list (make-search-machine expression)))
 
-(defmethod success-code ((strategy scan-everything))
-  `(go ,(find-state-name (initial-state strategy))))
-
-(defmethod initial-states ((strategy scan-everything))
-  (list (make-search-machine (initial-state strategy))))
-
-(defmethod make-complete-form (strategy variables declarations body)
-  `(prog* ,variables
-      (declare ,@declarations)
-      ,@body))
+(defmethod lambda-list ((strategy call-continuation))
+  '(vector start end continuation))
