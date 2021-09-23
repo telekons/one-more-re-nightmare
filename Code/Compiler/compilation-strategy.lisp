@@ -13,7 +13,7 @@
   (:method-combination append))
 (defgeneric lambda-list (strategy)
   (:documentation "The lambda list of the function to generate."))
-(defgeneric start-code (strategy expressions)
+(defgeneric start-code (strategy states)
   (:documentation "Part of a TAGBODY body used to start running a DFA."))
 
 (defclass scan-everything (strategy)

@@ -6,33 +6,34 @@
   tags-to-set)
 
 (defclass state ()
-  ((exit-map :initarg :exit-map :reader state-exit-map)
-   (expression :initarg :expression :reader state-expression)))
+  ((exit-map :initarg :exit-map :accessor state-exit-map)
+   (expression :initarg :expression :reader state-expression)
+   (transitions :initform '() :accessor state-transitions)))
+
 (defmethod print-object ((state state) stream)
   (print-unreadable-object (state stream :type t)
     (prin1 (state-expression state) stream)))
 
-(defun find-similar-state (states old-state state)
+(defun find-similar-state (states state)
   "Find another state which we can re-use with some transformation, returning that state and the required transformation."
   (flet ((win (other-state substitutions)
            (return-from find-similar-state
              (values other-state
-                     (loop with used = (used-tags other-state)
+                     (loop with used = (used-tags (state-expression other-state))
                            for ((v1 r1) . (v2 r2))
                              in (alexandria:hash-table-alist substitutions)
                            when (member (list v2 r2) used :test #'equal)
                              collect (list v2 r2 (list v1 r1)))))))
-    (let ((subs (similar state old-state)))
-      (unless (null subs)
-        (win old-state subs)))
-    (loop for other-state in states
-          for substitutions = (similar state other-state)
-          for used = (used-tags other-state)
+    (loop with expression = (state-expression state)
+          for other-state in states
+          for other-expression = (state-expression other-state)
+          for substitutions = (similar expression other-expression)
+          for used = (used-tags other-expression)
           unless (null substitutions)
             do (win other-state substitutions))))
 
-(defun add-transition (class last-state next-state tags-to-set dfa)
-  (let* ((old-transitions (gethash last-state dfa))
+(defun add-transition (class last-state next-state tags-to-set)
+  (let* ((old-transitions (state-transitions last-state))
          (same-transition
            (find-if (lambda (transition)
                       (and
@@ -45,7 +46,7 @@
               :class class
               :next-state next-state
               :tags-to-set tags-to-set)
-             (gethash last-state dfa)))
+             (state-transitions last-state)))
       (t
        (setf (transition-class same-transition)
              (set-union (transition-class same-transition)
@@ -57,47 +58,60 @@
   (_ nil))
 
 (defun make-dfa-from-expressions (expressions)
-  (let ((dfa    (make-hash-table))
-        (states (make-hash-table))
+  (let ((states (make-hash-table))
         (possibly-similar-states (make-hash-table))
         (work-list expressions)
         (*tag-gensym-counter* 0))
-    (loop
-      (when (null work-list) (return))
-      (let* ((state  (pop work-list))
-             (classes (derivative-classes state)))
-        (cond
-          ((or (re-stopped-p state) (re-empty-p state))
-           nil)
-          (t
-           (dolist (class classes)
-             (unless (set-null class)
-               (let* ((next-state (derivative state class))
-                      (tags-to-set (keep-used-assignments
-                                    next-state
-                                    (effects state))))
-                 (multiple-value-bind (other-state transformation)
-                     (find-similar-state
-                      (gethash (remove-tags next-state) possibly-similar-states '())
-                      state next-state)
-                   (cond
-                     ((null other-state)
-                      (unless (nth-value 1 (gethash next-state dfa))
-                        (pushnew next-state work-list)))
-                     (t                 ; Reuse this state.
-                      (setf tags-to-set (append tags-to-set transformation)
-                            next-state  other-state))))
-                 (add-transition class
-                                 state next-state
-                                 tags-to-set dfa))))))
-        (unless (eq state (empty-set))
-          (let ((n (nullable state)))
-            (setf (gethash state states)
-                  (make-instance 'state
-                                 :exit-map (mapcar #'third (tags n))
-                                 :expression state))
-            (push state (gethash (remove-tags state) possibly-similar-states))))))
-    (values dfa states)))
+    (flet ((find-state (expression)
+             (multiple-value-bind (state present?)
+                 (gethash expression states)
+               (if present?
+                   (values state nil)
+                   (values (setf (gethash expression states)
+                                 (make-instance 'state
+                                                :expression expression))
+                           t)))))
+      (loop
+        (when (null work-list) (return))
+        (let* ((expression (pop work-list))
+               (state (find-state expression)))
+          (cond
+            ((or (re-stopped-p expression) (re-empty-p expression))
+             nil)
+            (t
+             (let ((classes (derivative-classes expression)))
+               (dolist (class classes)
+                 (unless (set-null class)
+                   (let* ((next-expression (derivative expression class))
+                          (tags-to-set (keep-used-assignments
+                                        next-expression
+                                        (effects expression))))
+                     (multiple-value-bind (next-state new?)
+                         (find-state next-expression)
+                       (multiple-value-bind (other-state transformation)
+                           (find-similar-state
+                            (cons state
+                                  (gethash (remove-tags next-expression) possibly-similar-states '()))
+                            next-state)
+                         (cond
+                           ((null other-state)
+                            ;; No state to reuse, so check if we need to process the next state.
+                            (when new?
+                              (pushnew next-expression work-list)))
+                           (t
+                            ;; Reuse this state.
+                            (when new?
+                              (remhash (state-expression next-state) states))
+                            (setf tags-to-set (append tags-to-set transformation)
+                                  next-state  other-state)))
+                         (add-transition class
+                                         state next-state
+                                         tags-to-set)))))))))
+          (push state (gethash (remove-tags expression)
+                               possibly-similar-states))
+          (setf (state-exit-map state)
+                (mapcar #'third (tags (nullable expression)))))))
+    states))
 
 (defun make-dfa-from-expression (expression)
   (make-dfa-from-expressions (list expression)))
