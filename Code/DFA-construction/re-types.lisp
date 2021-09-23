@@ -149,6 +149,6 @@
           :from-end t))
 
 (defun group (r n)
-  (join (tag-set `((,n 0 position)))
+  (join (tag-set `((,(1- (* 2 n)) 0 position)))
         (join r
-              (tag-set `((,(1+ n) 0 position))))))
+              (tag-set `((,(* 2 n) 0 position))))))
