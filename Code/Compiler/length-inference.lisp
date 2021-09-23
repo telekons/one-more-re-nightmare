@@ -21,6 +21,8 @@
                      (push predecessor (predecessors successor)))))))
            transitions))
 
+(defvar *pointlessly-large-number* most-positive-fixnum)
+
 (defun compute-minimum-lengths (transitions states)
   (let ((work-list '()))
     (flet ((recompute-predecessors-of (state)
@@ -31,10 +33,12 @@
       (maphash (lambda (ex state)
                  (setf (minimum-length state)
                        (if (eq (nullable ex) (empty-set))
-                           most-positive-fixnum
+                           *pointlessly-large-number*
                            0))
                  (recompute-predecessors-of state))
                states)
+      ;; Set each minimum length to be one more than the minimum
+      ;; length of the successors.
       (loop until (null work-list)
             do (let* ((state       (pop work-list))
                       (transitions (gethash (state-expression state) transitions))
@@ -46,10 +50,15 @@
                                                 (gethash (transition-next-state transition)
                                                          states)))
                                           (if (null next-state)
-                                              most-positive-fixnum
+                                              *pointlessly-large-number*
                                               (minimum-length next-state))))
-                                 :initial-value most-positive-fixnum))))
+                                 :initial-value *pointlessly-large-number*))))
                  (when (< minimum-successors-length
                           (minimum-length state))
                    (setf (minimum-length state) minimum-successors-length)
-                   (recompute-predecessors-of state)))))))
+                   (recompute-predecessors-of state))))
+      ;; Make sure we did visit all the states.
+      (maphash (lambda (ex state)
+                 (declare (ignore ex))
+                 (assert (< (minimum-length state) most-positive-fixnum)))
+               states))))

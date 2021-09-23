@@ -32,13 +32,14 @@
                 (incf (next-state-name *compiler-state*)))))))
 
 (defun compile-regular-expression (expression)
-  (multiple-value-bind (expression groups)
-      (parse-regular-expression expression)
-    (let ((*variable-map* (variable-map-from-groups groups)))
-      (compile nil
-               (%compile-regular-expression
-                expression
-                *default-strategy*)))))
+  (with-hash-consing-tables ()
+    (multiple-value-bind (expression groups)
+        (parse-regular-expression expression)
+      (let ((*variable-map* (variable-map-from-groups groups)))
+        (compile nil
+                 (%compile-regular-expression
+                  expression
+                  *default-strategy*))))))
 
 (defun variable-map-from-groups (groups)
   (coerce `(start end ,@(alexandria:iota (* groups 2) :start 1))
