@@ -36,11 +36,13 @@
   (with-hash-consing-tables ()
     (multiple-value-bind (expression groups)
         (parse-regular-expression expression)
-      (compile nil
-        (%compile-regular-expression
-         expression
-         *default-strategy*
-         groups)))))
+      (values
+       (compile nil
+                (%compile-regular-expression
+                 expression
+                 *default-strategy*
+                 groups))
+       groups))))
 
 (defun variable-map-from-groups (groups)
   (coerce `(start end ,@(alexandria:iota (* groups 2) :start 1))
@@ -57,7 +59,8 @@
          (declare (simple-string vector)
                   (fixnum start end)
                   (function continuation)
-                  (optimize (speed 3) (safety 0)))
+                  (optimize (speed 3) (safety 0))
+                  #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note style-warning))
          (macrolet ,macros
            (prog* ,variables
               (declare ,@declarations)

@@ -53,10 +53,11 @@
 
 (defmethod macros-for-strategy append ((strategy call-continuation))
   '((win (&rest variables)
-     `(funcall continuation
-       (vector
+     `(progn
         ,@(loop for (name variable) in variables
-                collect variable))))))
+                for n from 0
+                collect `(setf (svref result-vector ,n) ,variable))
+        (funcall continuation)))))
 
 (defmethod lambda-list ((strategy call-continuation))
-  '(vector start end continuation))
+  '(vector start end result-vector continuation))
