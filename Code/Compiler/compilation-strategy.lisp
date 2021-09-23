@@ -6,10 +6,6 @@
 
 (defgeneric pre-process-re (strategy expression)
   (:documentation "Return a new RE with any modifications the strategy requires."))
-(defgeneric lossage-code (strategy)
-  (:documentation "Generate a form to insert when transitioning to the (EMPTY-SET) state."))
-(defgeneric success-code (strategy)
-  (:documentation "Generate a form to insert to keep searching after successfully matching."))
 (defgeneric initial-states (strategy expression)
   (:documentation "Compute a list of states to start compiling from."))
 (defgeneric macros-for-strategy (strategy)
@@ -17,6 +13,8 @@
   (:method-combination append))
 (defgeneric lambda-list (strategy)
   (:documentation "The lambda list of the function to generate."))
+(defgeneric start-code (strategy expressions)
+  (:documentation "Part of a TAGBODY body used to start running a DFA."))
 
 (defclass scan-everything (strategy)
   ()
@@ -58,7 +56,6 @@
      `(funcall continuation
        (vector
         ,@(loop for (name variable) in variables
-                collect `',name
                 collect variable))))))
 
 (defmethod lambda-list ((strategy call-continuation))

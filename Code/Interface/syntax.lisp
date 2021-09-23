@@ -2,8 +2,7 @@
 
 (defvar *next-group*)
 (defun next-group ()
-  (prog1 *next-group*
-    (incf *next-group* 2)))
+  (incf *next-group*))
 
 (esrap:defrule escaped-character
     (and #\\ character)
@@ -96,5 +95,6 @@ under-either | under-either
     (or two-expressions expression))
 
 (defun parse-regular-expression (string)
-  (let ((*next-group* 1))
-    (esrap:parse 'expressions string)))
+  (let ((*next-group* 0))
+    (values (esrap:parse 'expressions string)
+            *next-group*)))

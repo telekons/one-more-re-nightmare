@@ -1,6 +1,7 @@
 (in-package :one-more-re-nightmare)
 
 (defvar *compiler-state*)
+(defvar *variable-map*)
 
 (defclass compiler-state ()
   ((variable-names :initform (make-hash-table :test 'equal)
@@ -31,16 +32,23 @@
                 (incf (next-state-name *compiler-state*)))))))
 
 (defun compile-regular-expression (expression)
-  (compile nil
-           (%compile-regular-expression (parse-regular-expression expression)
-                                        #()
-                                        *default-strategy*)))
+  (multiple-value-bind (expression groups)
+      (parse-regular-expression expression)
+    (let ((*variable-map* (variable-map-from-groups groups)))
+      (compile nil
+               (%compile-regular-expression
+                expression
+                *default-strategy*)))))
 
-(defun %compile-regular-expression (expression variable-map strategy)
+(defun variable-map-from-groups (groups)
+  (coerce `(start end ,@(alexandria:iota (* groups 2) :start 1))
+          'vector))
+
+(defun %compile-regular-expression (expression strategy)
   (let* ((*compiler-state* (make-instance 'compiler-state))
          (macros (macros-for-strategy strategy)))
     (multiple-value-bind (variables declarations body)
-        (make-prog-parts strategy expression variable-map)
+        (make-prog-parts strategy expression)
       `(lambda ,(lambda-list strategy)
          (declare (simple-string vector)
                   (fixnum start end)
@@ -51,8 +59,8 @@
               (declare ,@declarations)
               ,@body))))))
 
-(defgeneric make-prog-parts (strategy expression variable-map)
-  (:method (strategy expression variable-map)
+(defgeneric make-prog-parts (strategy expression)
+  (:method (strategy expression)
     (let ((initial-states (initial-states strategy expression)))
       (multiple-value-bind (dfa states)
           (make-dfa-from-expressions initial-states)
@@ -104,7 +112,7 @@
            `(progn
               ,@(setf-from-assignments
                  (transition-tags-to-set transition))
-              (win ,@(state-exit-map state-info))
+              (win ,@(win-locations (state-exit-map state-info)))
               (restart ,(find-in-map 'end (state-exit-map state-info))))))
       ((re-empty-p next-state)
        `(progn
@@ -123,9 +131,12 @@
           (go ,(find-state-name next-state)))))))
 
 (defun win-locations (exit-map)
-  (loop for name in exit-map
-        for (variable nil) = name
-        collect `(,variable ,(find-variable-name name))))
+  (loop for variable-name across *variable-map*
+        for variable = (find variable-name exit-map :key #'first)
+        if (not (null variable))
+          collect `(,variable-name ,(find-variable-name variable))
+        else
+          collect `(,variable-name 'nil)))
 
 (defun setf-from-assignments (assignments)
   (loop for (variable replica source)
@@ -141,7 +152,7 @@
         (error "~s not in the map ~s" variable-name map)
         (find-variable-name variable))))
 
-(defun start-code (strategy expressions)
+(defmethod start-code ((strategy scan-everything) expressions)
   (destructuring-bind (expression) expressions
     (cond
       ((eq expression (empty-set))
