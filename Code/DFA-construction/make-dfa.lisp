@@ -5,8 +5,12 @@
   next-state
   tags-to-set)
 
-(defstruct state
-  exit-map)
+(defclass state ()
+  ((exit-map :initarg :exit-map :reader state-exit-map)
+   (expression :initarg :expression :reader state-expression)))
+(defmethod print-object ((state state) stream)
+  (print-unreadable-object (state stream :type t)
+    (prin1 (state-expression state) stream)))
 
 (defun find-similar-state (states old-state state)
   "Find another state which we can re-use with some transformation, returning that state and the required transformation."
@@ -89,7 +93,9 @@
         (unless (eq state (empty-set))
           (let ((n (nullable state)))
             (setf (gethash state states)
-                  (make-state :exit-map (mapcar #'third (tags n))))
+                  (make-instance 'state
+                                 :exit-map (mapcar #'third (tags n))
+                                 :expression state))
             (push state (gethash (remove-tags state) possibly-similar-states))))))
     (values dfa states)))
 

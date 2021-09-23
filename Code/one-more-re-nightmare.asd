@@ -1,7 +1,7 @@
 (asdf:defsystem :one-more-re-nightmare
   :depends-on (:trivia :alexandria :babel
                :esrap :trivial-indent
-               :dynamic-mixins)
+               :dynamic-mixins :stealth-mixin)
   :serial t
   :components ((:file "package")
                (:module "DFA-construction"
@@ -18,6 +18,7 @@
                              (:file "make-dfa")))
                (:module "Compiler"
                 :components ((:file "compilation-strategy")
+                             (:file "length-inference")
                              (:file "code-generation")))
                #+(or)
                (:module "Boyer-Moore-Horspool"
