@@ -56,14 +56,16 @@
     (let ((initial-states (initial-states strategy expression)))
       (multiple-value-bind (dfa states)
           (make-dfa-from-expressions initial-states)
-        (let* ((form (make-body-from-dfa dfa states))
+        (let* ((body (make-body-from-dfa dfa states))
+               (start-code (start-code strategy initial-states))
                (variables (alexandria:hash-table-values
                            (variable-names *compiler-state*))))
-          (values `((start start)
-                    (position start)
-                    ,@(loop for variable in variables collect `(,variable 0)))
-                  `((fixnum start position ,@variables))
-                  form))))))
+          (values
+           `((start start)
+             (position start)
+             ,@(loop for variable in variables collect `(,variable 0)))
+           `(((and unsigned-byte fixnum) start position ,@variables))
+           (append start-code body)))))))
 
 (defun make-body-from-dfa (dfa states)
   (loop for state       being the hash-keys of dfa
@@ -123,7 +125,7 @@
 (defun win-locations (exit-map)
   (loop for name in exit-map
         for (variable nil) = name
-        collect `(,variable ,(find-variable-name name)))
+        collect `(,variable ,(find-variable-name name))))
 
 (defun setf-from-assignments (assignments)
   (loop for (variable replica source)
@@ -138,3 +140,26 @@
     (if (null variable)
         (error "~s not in the map ~s" variable-name map)
         (find-variable-name variable))))
+
+(defun start-code (strategy expressions)
+  (destructuring-bind (expression) expressions
+    (cond
+      ((eq expression (empty-set))
+       ;; Just return immediately if we're told to match nothing.
+       `(start (return)))
+      ((re-empty-p expression)
+       ;; Succeed for every character?
+       (let ((effects (effects expression)))
+         `(start
+           (cond
+             ((= position end)
+              (return))
+             (t
+              ,@(setf-from-assignments effects)
+              (win ,@(win-locations
+                      (loop for (variable replica nil) in effects
+                            collect (list variable replica))))
+              (incf position)
+              (go start))))))
+      (t
+       `(start (go ,(find-state-name expression)))))))

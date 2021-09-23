@@ -51,14 +51,15 @@
         (if (= ,next-position start)
             (setf start (1+ start))
             (setf start ,next-position))
-        (go 1)))))
+        (go start)))))
 
 (defmethod macros-for-strategy append ((strategy call-continuation))
   '((win (&rest variables)
      `(funcall continuation
-       (list
+       (vector
         ,@(loop for (name variable) in variables
-                collect `(list ',name ,variable)))))))
+                collect `',name
+                collect variable))))))
 
 (defmethod lambda-list ((strategy call-continuation))
   '(vector start end continuation))
