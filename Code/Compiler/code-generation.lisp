@@ -5,7 +5,7 @@
 (defclass compiler-state ()
   ((variable-names :initform (make-hash-table :test 'equal)
                    :reader variable-names)
-   (state-names    :initform (make-hash-table :test 'eq)
+   (state-names    :initform (make-hash-table :test 'equal)
                    :reader state-names)
    (next-state-name :initform 0
                     :accessor next-state-name)
@@ -23,13 +23,13 @@
           (setf (gethash variable names)
                 (make-symbol (princ-to-string variable)))))))
 
-(defun find-state-name (state)
+(defun find-state-name (state &optional (entry-point :bounds-check))
   (let ((names (state-names *compiler-state*)))
     (multiple-value-bind (name present?)
-        (gethash state names)
+        (gethash (cons state entry-point) names)
       (if present?
           name
-          (setf (gethash state names)
+          (setf (gethash (cons state entry-point) names)
                 (incf (next-state-name *compiler-state*)))))))
 
 (defun compile-regular-expression (expression)
@@ -53,67 +53,74 @@
          (macros (macros-for-strategy strategy)))
     (multiple-value-bind (variables declarations body)
         (make-prog-parts strategy expression)
-      (values
-       `(lambda ,(lambda-list strategy)
-          (declare (simple-string vector)
-                   (fixnum start end)
-                   (function continuation)
-                   (optimize (speed 3) (safety 0)))
-          (macrolet ,macros
-            (prog* ,variables
-               (declare ,@declarations)
-               ,@body)))
-       *compiler-state*))))
+      `(lambda ,(lambda-list strategy)
+         (declare (simple-string vector)
+                  (fixnum start end)
+                  (function continuation)
+                  (optimize (speed 3) (safety 0)))
+         (macrolet ,macros
+           (prog* ,variables
+              (declare ,@declarations)
+              ,@body))))))
 
 (defgeneric make-prog-parts (strategy expression)
   (:method (strategy expression)
     (let* ((initial-expressions (initial-states strategy expression))
-           (states (make-dfa-from-expressions initial-expressions))
-           (body (make-body-from-dfa states))
-           (initial-states (loop for expression in initial-expressions
-                                 collect (gethash expression states)))
-           (start-code (start-code strategy initial-states))
-           (variables (alexandria:hash-table-values
-                       (variable-names *compiler-state*))))
-      (values
-       `((start start)
-         (position start)
-         ,@(loop for variable in variables collect `(,variable 0)))
-       `(((and unsigned-byte fixnum) start position ,@variables))
-       (append start-code body)))))
+           (states (make-dfa-from-expressions initial-expressions)))
+      (compute-predecessor-lists states)
+      (compute-minimum-lengths states)
+      (let* ((body (make-body-from-dfa states))
+             (initial-states (loop for expression in initial-expressions
+                                   collect (gethash expression states)))
+             (start-code (start-code strategy initial-states))
+             (variables (alexandria:hash-table-values
+                         (variable-names *compiler-state*))))
+        (values
+         `((start start)
+           (position start)
+           ,@(loop for variable in variables collect `(,variable 0)))
+         `(((and unsigned-byte fixnum) start position ,@variables))
+         (append start-code body))))))
 
 (defun make-body-from-dfa (states)
   (loop for state being the hash-values of states
         for expression = (state-expression state)
         for nullable = (nullable expression)
+        ;; Yes, we still need to test would we continue scanning the
+        ;; string. 
+        for minimum-length = (max (minimum-length state) 1)
+        ;; We "inline" these states into transitions rather than
+        ;; emitting a GO form.
         unless (or (re-stopped-p expression)
                    (re-empty-p expression))
-          collect (find-state-name state)
-          and collect `(if (< position end)
-                           (let ((value (aref vector position)))
-                             (cond
-                               ,@(loop for transition in (state-transitions state)
-                                       collect `(,(make-test-form (transition-class transition)
-                                                                  'value)
-                                                 ,(transition-code state transition)))))
-                           ,(if (eq (empty-set) nullable)
-                                `(return)
-                                ;; We hit EOF and this state is nullable, so
-                                ;; succeed with what we got so far.
-                                `(progn
-                                   ,@(setf-from-assignments
-                                      (keep-used-assignments
-                                       nullable
-                                       (tags (state-expression state))))
-                                   (win ,@(win-locations (state-exit-map state)))
-                                   (return))))))
+          append
+        `(,(find-state-name state :bounds-check)
+          (unless (<= (+ position ,minimum-length) end)
+            ,(if (eq (empty-set) nullable)
+                 `(return)
+                 ;; We hit EOF and this state is nullable, so
+                 ;; succeed with what we got so far.
+                 `(progn
+                    ,@(setf-from-assignments
+                       (keep-used-assignments
+                        nullable
+                        (tags (state-expression state))))
+                    (win ,@(win-locations (state-exit-map state)))
+                    (return))))
+          ,(find-state-name state :no-bounds-check)
+          (let ((value (aref vector position)))
+            (cond
+              ,@(loop for transition in (state-transitions state)
+                      collect `(,(make-test-form (transition-class transition)
+                                                 'value)
+                                ,(transition-code state transition))))))))
 
 (defun transition-code (previous-state transition)
   (let* ((next-state (transition-next-state transition))
          (next-expression (state-expression next-state)))
     (cond
       ((re-stopped-p next-expression)
-       (if (eq (nullable previous-state) (empty-set))
+       (if (eq (nullable (state-expression previous-state)) (empty-set))
            `(restart start)
            ;; Similarly to hitting EOF, if this state is nullable then
            ;; we can succeed with what we got.
@@ -132,11 +139,16 @@
           (win ,@(win-locations (state-exit-map next-state)))
           (restart position)))
       (t
-       `(progn
-          ,@(setf-from-assignments
-             (transition-tags-to-set transition))
-          (incf position)
-          (go ,(find-state-name next-state)))))))
+       (let ((entry-point
+               (if (< (minimum-length next-state)
+                      (minimum-length previous-state))
+                   :no-bounds-check
+                   :bounds-check)))
+         `(progn
+            ,@(setf-from-assignments
+               (transition-tags-to-set transition))
+            (incf position)
+            (go ,(find-state-name next-state entry-point))))))))
 
 (defun win-locations (exit-map)
   (loop for variable-name across (variable-map *compiler-state*)
@@ -182,4 +194,6 @@
                 (incf position)
                 (go start))))))
         (t
-         `(start (go ,(find-state-name state))))))))
+         `(start
+           (setf position start)
+           (go ,(find-state-name state :bounds-check))))))))
