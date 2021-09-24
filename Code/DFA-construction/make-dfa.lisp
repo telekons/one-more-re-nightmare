@@ -7,7 +7,7 @@
 
 (defclass state ()
   ((exit-map :initarg :exit-map :accessor state-exit-map)
-   (expression :initarg :expression :reader state-expression)
+   (expression :initarg :expression :accessor state-expression)
    (transitions :initform '() :accessor state-transitions)))
 
 (defmethod print-object ((state state) stream)

@@ -60,6 +60,7 @@
                   (fixnum start end)
                   (function continuation)
                   (optimize ,@*optimize-settings*)
+                  #+(or)
                   #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note style-warning))
          (macrolet ,macros
            (prog* ,variables
@@ -70,6 +71,7 @@
   (:method (strategy expression)
     (let* ((initial-expressions (initial-states strategy expression))
            (states (make-dfa-from-expressions initial-expressions)))
+      (remove-aliases states)
       (compute-predecessor-lists states)
       (compute-minimum-lengths states)
       (let* ((body (make-body-from-dfa states))

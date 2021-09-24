@@ -20,6 +20,7 @@
                 :components ((:file "compilation-strategy")
                              (:file "length-inference")
                              (:file "optimize-settings")
+                             (:file "aliases")
                              (:file "code-generation")))
                #+(or)
                (:module "Boyer-Moore-Horspool"
