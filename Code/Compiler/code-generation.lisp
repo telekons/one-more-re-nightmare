@@ -37,11 +37,12 @@
     (multiple-value-bind (expression groups)
         (parse-regular-expression expression)
       (values
-       (compile nil
-                (%compile-regular-expression
-                 expression
-                 *default-strategy*
-                 groups))
+       (with-naughty-compiler-switches ()
+         (compile nil
+                  (%compile-regular-expression
+                   expression
+                   *default-strategy*
+                   groups)))
        groups))))
 
 (defun variable-map-from-groups (groups)
