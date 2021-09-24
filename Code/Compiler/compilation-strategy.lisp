@@ -45,12 +45,8 @@
   (list (make-search-machine expression)))
 
 (defmethod macros-for-strategy append ((strategy scan-everything))
-  '((restart (next-position)
-     `(progn
-        (if (= ,next-position start)
-            (setf start (1+ start))
-            (setf start ,next-position))
-        (go start)))))
+  '((restart ()
+     '(go start))))
 
 (defmethod macros-for-strategy append ((strategy call-continuation))
   '((win (&rest variables)
@@ -58,7 +54,7 @@
         ,@(loop for (name variable) in variables
                 for n from 0
                 collect `(setf (svref result-vector ,n) ,variable))
-        (funcall continuation)))))
+        (go win)))))
 
 (defmethod lambda-list ((strategy call-continuation))
   '(vector start end result-vector continuation))

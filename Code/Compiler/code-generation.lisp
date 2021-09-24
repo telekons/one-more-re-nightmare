@@ -107,8 +107,8 @@
                        (keep-used-assignments
                         nullable
                         (tags (state-expression state))))
-                    (win ,@(win-locations (state-exit-map state)))
-                    (return))))
+                    (setf start position)
+                    (win ,@(win-locations (state-exit-map state))))))
           ,(find-state-name state :no-bounds-check)
           (let ((value (aref vector position)))
             (cond
@@ -123,14 +123,16 @@
     (cond
       ((re-stopped-p next-expression)
        (if (eq (nullable (state-expression previous-state)) (empty-set))
-           `(restart start)
+           `(progn
+              (setf start (1+ start))
+              (go start))
            ;; Similarly to hitting EOF, if this state is nullable then
            ;; we can succeed with what we got.
            `(progn
               ,@(setf-from-assignments
                  (transition-tags-to-set transition))
-              (win ,@(win-locations (state-exit-map next-state)))
-              (restart ,(find-in-map 'end (state-exit-map next-state))))))
+              (setf start ,(find-in-map 'end (state-exit-map next-state)))
+              (win ,@(win-locations (state-exit-map next-state))))))
       ((re-empty-p next-expression)
        `(progn
           ,@(setf-from-assignments
@@ -138,8 +140,8 @@
           (incf position)
           ,@(setf-from-assignments
              (tags next-expression))
-          (win ,@(win-locations (state-exit-map next-state)))
-          (restart position)))
+          (setf start position)
+          (win ,@(win-locations (state-exit-map next-state)))))
       (t
        (let ((entry-point
                (if (< (minimum-length next-state)
@@ -190,12 +192,17 @@
                 (return))
                (t
                 ,@(setf-from-assignments effects)
+                (incf position)
                 (win ,@(win-locations
                         (loop for (variable replica nil) in effects
-                              collect (list variable replica))))
-                (incf position)
-                (go start))))))
+                              collect (list variable replica)))))))))
         (t
          `(start
            (setf position start)
            (go ,(find-state-name state :bounds-check))))))))
+
+(defmethod start-code :around ((strategy call-continuation) states)
+  (append (call-next-method)
+          `(win
+            (funcall continuation)
+            (restart))))

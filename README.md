@@ -88,9 +88,11 @@ many matching operations with few expressions. It does cache compiled
 expressions when using the high-level interface, so the initial cost may 
 amortize well over many calls.
 
+TODO: check again on the other implementations
+
 | engine           | SBCL      | Clozure CL | ECL        | ABCL       |
 |------------------|-----------|------------|------------|------------|
-| o-m-r-n          | 2.59ms    | 3.78ms     | 1.83ms     | 5.83ms     |
+| o-m-r-n          | 0.81ms    | 3.78ms     | 1.83ms     | 5.83ms     |
 | compilation time | 4.54ms    | 2.38ms     | 230ms      | 3.10ms     |
 | cl-ppcre         | 22.8ms    | 40.1ms     | 225ms      | 239ms      |
-| break even after | 224kchars | 65.5kchars | 1.03Mchars | 13.3kchars |
+| break even after | 206kchars | 65.5kchars | 1.03Mchars | 13.3kchars |
