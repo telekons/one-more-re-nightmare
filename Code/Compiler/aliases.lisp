@@ -59,6 +59,7 @@
              states)
     (dolist (state states-to-put-back)
       (setf (gethash (state-expression state) states) state))
+    #+(or)
     (assert (not (member old-replica (gethash variable (all-tags states)))))))
 
 (defun remove-aliases (states)
