@@ -15,6 +15,7 @@
   (:documentation "The lambda list of the function to generate."))
 (defgeneric start-code (strategy states)
   (:documentation "Part of a TAGBODY body used to start running a DFA."))
+(defgeneric declarations (strategy))
 
 (defclass scan-everything (strategy)
   ()
@@ -61,3 +62,9 @@
 
 (defmethod lambda-list ((strategy call-continuation))
   '(vector start end result-vector continuation))
+
+(defmethod declarations ((strategy call-continuation))
+  '((simple-string vector)
+    (alexandria:array-index start end)
+    (function continuation)
+    (simple-vector result-vector)))

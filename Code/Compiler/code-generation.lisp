@@ -21,7 +21,7 @@
       (if present?
           name
           (setf (gethash variable names)
-                (make-symbol (princ-to-string variable)))))))
+                (make-symbol (format nil "~{~a.~a~}" variable)))))))
 
 (defun find-state-name (state &optional (entry-point :bounds-check))
   (let ((names (state-names *compiler-state*)))
@@ -57,10 +57,8 @@
     (multiple-value-bind (variables declarations body)
         (make-prog-parts strategy expression)
       `(lambda ,(lambda-list strategy)
-         (declare (simple-string vector)
-                  (fixnum start end)
-                  (function continuation)
-                  (optimize ,@*optimize-settings*)
+         (declare (optimize ,@*optimize-settings*)
+                  ,@(declarations strategy)
                   #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note style-warning))
          (macrolet ,macros
            (prog* ,variables
