@@ -64,7 +64,7 @@
   '(vector start end result-vector continuation))
 
 (defmethod declarations ((strategy call-continuation))
-  '((simple-string vector)
+  '(((simple-array character 1) vector)
     (alexandria:array-index start end)
     (function continuation)
     (simple-vector result-vector)))
