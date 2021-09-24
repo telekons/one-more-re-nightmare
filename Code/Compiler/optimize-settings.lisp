@@ -8,7 +8,7 @@
 
 (defmacro with-naughty-compiler-switches (() &body body)
   #+sbcl
-  `(let ((sb-c::*reoptimize-limit* 1))
+  `(let ((sb-c::*reoptimize-limit* 3))
      ,@body)
   #-sbcl
   `(progn ,@body))
