@@ -71,7 +71,6 @@
   (:method (strategy expression)
     (let* ((initial-expressions (initial-states strategy expression))
            (states (make-dfa-from-expressions initial-expressions)))
-      #+(or) (remove-aliases states)
       (compute-predecessor-lists states)
       (compute-minimum-lengths states)
       (let* ((body (make-body-from-dfa states))
