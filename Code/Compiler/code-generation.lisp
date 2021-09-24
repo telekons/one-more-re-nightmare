@@ -59,7 +59,7 @@
          (declare (simple-string vector)
                   (fixnum start end)
                   (function continuation)
-                  (optimize (speed 3) (safety 0))
+                  (optimize ,@*optimize-settings*)
                   #+sbcl (sb-ext:muffle-conditions sb-ext:compiler-note style-warning))
          (macrolet ,macros
            (prog* ,variables
@@ -82,7 +82,7 @@
          `((start start)
            (position start)
            ,@(loop for variable in variables collect `(,variable 0)))
-         `(((and unsigned-byte fixnum) start position ,@variables))
+         `((alexandria:array-index start position ,@variables))
          (append start-code body))))))
 
 (defun make-body-from-dfa (states)
@@ -98,7 +98,7 @@
                    (re-empty-p expression))
           append
         `(,(find-state-name state :bounds-check)
-          (unless (<= (+ position ,minimum-length) end)
+          (unless (<= (the alexandria:array-index (+ position ,minimum-length)) end)
             ,(if (eq (empty-set) nullable)
                  `(return)
                  ;; We hit EOF and this state is nullable, so
@@ -162,12 +162,12 @@
           collect `(,variable-name 'nil)))
 
 (defun setf-from-assignments (assignments)
-  (loop for (variable replica source)
-          in assignments
-        unless (equal (list variable replica) source)
-          collect `(setf ,(find-variable-name
-                           (list variable replica))
-                         ,(find-variable-name source))))
+  `((setf
+     ,@(loop for (variable replica source)
+               in assignments
+             unless (equal (list variable replica) source)
+               collect (find-variable-name (list variable replica))
+               and collect (find-variable-name source)))))
 
 (defun find-in-map (variable-name map)
   (let ((variable (find variable-name map :key #'first)))

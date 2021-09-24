@@ -19,6 +19,7 @@
                (:module "Compiler"
                 :components ((:file "compilation-strategy")
                              (:file "length-inference")
+                             (:file "optimize-settings")
                              (:file "code-generation")))
                #+(or)
                (:module "Boyer-Moore-Horspool"

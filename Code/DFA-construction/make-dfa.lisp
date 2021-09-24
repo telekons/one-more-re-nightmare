@@ -57,6 +57,26 @@
   ((empty-set) t)
   (_ nil))
 
+(defun peephole-optimize (assignments used-tags)
+  (let ((result '())
+        (remaining-assignments assignments))
+    (flet ((substitute-variable (variable replica source)
+             (setf remaining-assignments
+                   (loop for (v r s) in remaining-assignments
+                         ;; Rewrite {A <- B} C <- A to C <- B
+                         if (equal s (list variable replica))
+                           collect (list v r source)
+                         else
+                           collect (list v r s)))))
+      (loop until (null remaining-assignments)
+            do (destructuring-bind (variable replica source)
+                   (pop remaining-assignments)
+                 (if (member (list variable replica) used-tags :test #'equal)
+                     (push (list variable replica source) result)
+                     (substitute-variable variable replica source))))
+      (reverse result))))
+            
+
 (defun make-dfa-from-expressions (expressions)
   (let ((states (make-hash-table))
         (possibly-similar-states (make-hash-table))
@@ -102,7 +122,9 @@
                             ;; Reuse this state.
                             (when new?
                               (remhash (state-expression next-state) states))
-                            (setf tags-to-set (append tags-to-set transformation)
+                            (setf tags-to-set (peephole-optimize
+                                               (append tags-to-set transformation)
+                                               (used-tags (state-expression other-state)))
                                   next-state  other-state)))
                          (add-transition class
                                          state next-state
