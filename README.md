@@ -92,7 +92,7 @@ TODO: check again on the other implementations
 
 | engine           | SBCL      | Clozure CL | ECL        | ABCL       |
 |------------------|-----------|------------|------------|------------|
-| o-m-r-n          | 0.81ms    | 3.78ms     | 1.83ms     | 5.83ms     |
-| compilation time | 4.54ms    | 2.38ms     | 230ms      | 3.10ms     |
-| cl-ppcre         | 22.8ms    | 40.1ms     | 225ms      | 239ms      |
-| break even after | 206kchars | 65.5kchars | 1.03Mchars | 13.3kchars |
+| o-m-r-n          | 0.81ms    | 4.18ms     | 1.38ms     | 5.13ms     |
+| compilation time | 4.54ms    | 4.08ms     | 200ms      | 9.21ms     |
+| cl-ppcre         | 22.8ms    | 39.4ms     | 279ms      | 345ms      |
+| break even after | 206kchars | 118kchars  | 720kchars  | 33.6kchars |

@@ -51,7 +51,7 @@
 (defmethod macros-for-strategy append ((strategy call-continuation))
   '((win (&rest variables)
      `(progn
-        ,@(loop for (name variable) in variables
+        ,@(loop for (nil variable) in variables
                 for n from 0
                 collect `(setf (svref result-vector ,n) ,variable))
         (go win)))))
