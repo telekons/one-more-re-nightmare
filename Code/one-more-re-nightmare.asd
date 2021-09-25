@@ -28,4 +28,5 @@
                (:module "Interface"
                 :components ((:file "syntax")
                              (:file "convert-to-bytes")
+                             (:file "code-cache")
                              (:file "interface")))))

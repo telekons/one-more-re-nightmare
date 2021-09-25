@@ -1,82 +1,79 @@
 (in-package :one-more-re-nightmare)
 
-(defvar *compiled-regexps* (make-hash-table :test 'equal))
-(defvar *last-used-regexp* (vector nil nil nil))
+(defun match-vector-size (groups)
+  (* 2 (1+ groups)))
 
-(defun vector-expression-type (vector)
-  (let ((array-type (if (typep vector 'simple-array)
-                        'simple-array 'array)))
-    `(,array-type ,(array-element-type vector) (*))))
-
-(defun set-last-used-regexp (regular-expression class information)
-  (setf (svref *last-used-regexp* 0) regular-expression
-        (svref *last-used-regexp* 1) class
-        (svref *last-used-regexp* 2) information))
-
-(defun find-compiled-regular-expression (regular-expression vector)
-  (let* ((class (class-of vector))
-         (key   (cons class regular-expression)))
-    (when (and (eq (svref *last-used-regexp* 0) regular-expression)
-               (eq (svref *last-used-regexp* 1) class))
-      (return-from find-compiled-regular-expression
-        (values-list (svref *last-used-regexp* 2))))
-    (multiple-value-bind (information present?)
-        (gethash key *compiled-regexps*)
-      (when present?
-        (set-last-used-regexp regular-expression class information)
-        (return-from find-compiled-regular-expression
-          (values-list information))))
-    (let ((information
-            (multiple-value-list
-             (compile-regular-expression
-              regular-expression
-              :vector-type (vector-expression-type vector)))))
-      (setf (gethash key *compiled-regexps*) information)
-      (values-list information))))
-
-(defvar *empty-vector* #())
-
+(defun %all-matches (code vector start end)
+  (assert (and (<= end (length vector))
+               (<= start end)))
+  (destructuring-bind (function groups) code
+    (let ((match (make-array (match-vector-size groups)
+                             :initial-element nil))
+          (results '()))
+      (funcall function vector start end match
+               (lambda ()
+                 (push (copy-seq match) results)))
+      (reverse results))))
+  
 (defun all-matches (regular-expression vector
                     &key (start 0) (end (length vector)))
-  "Returns a list of (start end tags) of every match"
-  (multiple-value-bind (function tags)
-      (find-compiled-regular-expression regular-expression
-                                        vector)
-    (let ((matches '())
-          (tag-vector (if (zerop tags)
-                          *empty-vector*
-                          (make-array tags))))
-      (funcall function vector start end tag-vector
-               (lambda (start end)
-                 (push (list start end (alexandria:copy-array tag-vector))
-                       matches)))
-      (nreverse matches))))
+  "Returns a list of match vectors of every match"
+  (%all-matches (find-code regular-expression (string-type-of vector))
+                vector start end))
 
-(declaim (inline subseqs<-positions))
-(defun subseqs<-positions (vector tag-vector length)
-  (declare (optimize (speed 3) (safety 0))
-           (simple-vector tag-vector)
-           (alexandria:array-length length))
-  (let ((subseqs (make-array (floor length 2)
-                             :initial-element nil)))
-    (loop for n from 0
-          for tag-n below length by 2
-          for start = (aref tag-vector tag-n)
-          for end   = (aref tag-vector (1+ tag-n))
-          unless (or (null start) (null end))
-            do (setf (aref subseqs n)
+(defmacro with-code-for-vector ((code vector regular-expression) &body body)
+  `(alexandria:once-only (,vector)
+     (alexandria:with-gensyms (,code)
+       `(let ((,,code
+                (cond
+                  ,@(loop for string-type in *string-types*
+                          collect `((typep ,,vector ',string-type)
+                                    (load-time-value (find-code ,,regular-expression ',string-type))))
+                  (t (find-code ,,regular-expression (string-type-of ,,vector))))))
+          ,(progn ,@body)))))
+
+(define-compiler-macro all-matches (&whole w
+                                    regular-expression vector
+                                    &key (start 0)
+                                         (end nil end-p))
+  (if (not (stringp regular-expression))
+      w
+      ;; Grab code at load-time if possible.
+      (with-code-for-vector (code vector regular-expression)
+        `(%all-matches ,code ,vector ,start ,(if end-p end `(length ,vector))))))
+
+(defun subsequences (vector match-vector)
+  (declare (simple-vector match-vector))
+  (let* ((sequences (floor (length match-vector) 2))
+         (string-match-vector (make-array sequences)))
+    (loop for n below sequences
+          for start = (aref match-vector (* n 2))
+          for end = (aref match-vector (1+ (* n 2)))
+          if (null start)
+            do (setf (aref string-match-vector n) nil)
+          else
+            do (setf (aref string-match-vector n)
                      (subseq vector start end)))
-    subseqs))
+    string-match-vector))
 
 (defun all-string-matches (regular-expression vector
                            &key (start 0) (end (length vector)))
-  (let ((matches (all-matches regular-expression vector
-                              :start start :end end)))
-    (loop for (start end tags) in matches
-          collect (subseq vector start end) into matches
-          collect (subseqs<-positions vector tags (length tags))
-            into submatches
-          finally (return (values matches submatches)))))
+  (mapcar (lambda (match) (subsequences vector match))
+          (all-matches regular-expression
+                       vector
+                       :start start
+                       :end end)))
+
+(define-compiler-macro all-string-matches (&whole w
+                                          regular-expression vector
+                                          &key (start 0)
+                                               (end nil end-p))
+  (if (not (stringp regular-expression))
+      w
+      ;; Grab code at load-time if possible.
+      (with-code-for-vector (code vector regular-expression)
+        `(mapcar (lambda (match) (subsequences ,vector match))
+                 (%all-matches ,code ,vector ,start ,(if end-p end `(length ,vector)))))))
 
 (defun first-match (regular-expression vector
                     &key (start 0) (end (length vector)))

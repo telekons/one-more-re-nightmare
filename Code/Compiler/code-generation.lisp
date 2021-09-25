@@ -1,6 +1,7 @@
 (in-package :one-more-re-nightmare)
 
 (defvar *compiler-state*)
+(defvar *layout*)
 
 (defclass compiler-state ()
   ((variable-names :initform (make-hash-table :test 'equal)
@@ -32,18 +33,19 @@
           (setf (gethash (cons state entry-point) names)
                 (incf (next-state-name *compiler-state*)))))))
 
-(defun compile-regular-expression (expression)
-  (with-hash-consing-tables ()
-    (multiple-value-bind (expression groups)
-        (parse-regular-expression expression)
-      (values
-       (with-naughty-compiler-switches ()
-         (compile nil
-                  (%compile-regular-expression
-                   expression
-                   *default-strategy*
-                   groups)))
-       groups))))
+(defun compile-regular-expression (expression &key (layout *default-layout*))
+  (let ((*layout* layout))
+    (with-hash-consing-tables ()
+      (multiple-value-bind (expression groups)
+          (parse-regular-expression expression)
+        (values
+         (with-naughty-compiler-switches ()
+           (compile nil
+                    (%compile-regular-expression
+                     expression
+                     *default-strategy*
+                     groups)))
+         groups)))))
 
 (defun variable-map-from-groups (groups)
   (coerce `(start end ,@(alexandria:iota (* groups 2) :start 1))
@@ -110,11 +112,12 @@
                     (setf start position)
                     (win ,@(win-locations (state-exit-map state))))))
           ,(find-state-name state :no-bounds-check)
-          (let ((value (aref vector position)))
+          (let ((value (,(layout-ref *layout*) vector position)))
             (cond
               ,@(loop for transition in (state-transitions state)
                       collect `(,(make-test-form (transition-class transition)
-                                                 'value)
+                                                 'value
+                                                 (layout-test *layout*))
                                 ,(transition-code state transition))))))))
 
 (defun transition-code (previous-state transition)
