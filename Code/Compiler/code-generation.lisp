@@ -110,7 +110,7 @@
                     ,@(setf-from-assignments
                        (keep-used-assignments
                         nullable
-                        (tags (state-expression state))))
+                        (effects (state-expression state))))
                     (setf start (max position (1+ start)))
                     (win ,@(win-locations (state-exit-map state))))))
           ,(find-state-name state :no-bounds-check)
