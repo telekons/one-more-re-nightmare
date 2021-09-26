@@ -136,7 +136,7 @@
            `(progn
               ,@(setf-from-assignments
                  (transition-tags-to-set transition))
-              (setf start ,(find-in-map 'end (state-exit-map next-state)))
+              (setf start (max (1+ start) ,(find-in-map 'end (state-exit-map next-state))))
               (win ,@(win-locations (state-exit-map next-state))))))
       ((re-empty-p next-expression)
        `(progn
