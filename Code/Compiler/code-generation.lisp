@@ -100,6 +100,8 @@
           append
         `(,(find-state-name state :bounds-check)
           (unless (<= (the alexandria:array-index (+ position ,minimum-length)) end)
+            (when (> position end)
+              (return))
             ,(if (eq (empty-set) nullable)
                  `(return)
                  ;; We hit EOF and this state is nullable, so
@@ -108,8 +110,8 @@
                     ,@(setf-from-assignments
                        (keep-used-assignments
                         nullable
-                        (tags (state-expression state))))
-                    (setf start position)
+                        (effects (state-expression state))))
+                    (setf start (max position (1+ start)))
                     (win ,@(win-locations (state-exit-map state))))))
           ,(find-state-name state :no-bounds-check)
           (let ((value (,(layout-ref *layout*) vector position)))
@@ -134,7 +136,7 @@
            `(progn
               ,@(setf-from-assignments
                  (transition-tags-to-set transition))
-              (setf start ,(find-in-map 'end (state-exit-map next-state)))
+              (setf start (max (1+ start) ,(find-in-map 'end (state-exit-map next-state))))
               (win ,@(win-locations (state-exit-map next-state))))))
       ((re-empty-p next-expression)
        `(progn
@@ -201,6 +203,8 @@
                               collect (list variable replica)))))))))
         (t
          `(start
+           (when (> position end)
+             (return))
            (setf position start)
            (go ,(find-state-name state :bounds-check))))))))
 

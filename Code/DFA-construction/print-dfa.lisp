@@ -6,11 +6,11 @@
 
 (defun print-dfa (dfa initial-state)
   (let ((*dfa* dfa)
-        (*initial-state* initial-state))
+        (*initial-state* (gethash initial-state dfa)))
     (cl-dot:print-graph
      (cl-dot:generate-graph-from-roots
       'dfa
-      (list initial-state)
+      (list (gethash initial-state dfa))
       '(:node (:fontname "Inconsolata" :shape :box)
         :edge (:fontname "Inconsolata"))))))
 
@@ -25,7 +25,7 @@
   ;; trailing \l, which is necessary even when there isn't another
   ;; line break.
   (make-instance 'cl-dot:node
-    :attributes (list :label (list :left (format nil "~A~%" state)))))
+    :attributes (list :label (list :left (format nil "~A~%" (state-expression state))))))
 
 (defun escape-string (string)
   "A lazy way to make a single backslash into two, as cl-dot won't do it."
@@ -34,8 +34,9 @@
 
 (defmethod cl-dot:graph-object-edges ((graph (eql 'dfa)))
   (let ((edges (list (list 'nothing *initial-state*))))
-    (maphash (lambda (state transitions)
-               (dolist (transition transitions)
+    (maphash (lambda (re state)
+               (declare (ignore re))
+               (dolist (transition (state-transitions state))
                  (push (list state (transition-next-state transition)
                              (list :label
                                    (escape-string

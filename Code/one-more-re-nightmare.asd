@@ -18,6 +18,7 @@
                              (:file "make-dfa")))
                (:module "Compiler"
                 :components ((:file "compilation-strategy")
+                             (:file "layout")
                              (:file "length-inference")
                              (:file "optimize-settings")
                              (:file "code-generation")))

@@ -8,7 +8,8 @@
 (defclass state ()
   ((exit-map :initarg :exit-map :accessor state-exit-map)
    (expression :initarg :expression :accessor state-expression)
-   (transitions :initform '() :accessor state-transitions)))
+   (transitions :initform '() :accessor state-transitions)
+   (eof-transition :accessor state-eof-transition)))
 
 (defmethod print-object ((state state) stream)
   (print-unreadable-object (state stream :type t)
