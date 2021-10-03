@@ -36,7 +36,10 @@
        (let* ((r* (derivative r set))
               (n (nullable r*)))
          (if (eq n (empty-set))
-             (grep (either r* (unique-tags s))
+             (grep (either r*
+                           (if (has-tags-p r*)
+                               (unique-tags s)
+                               s))
                    s)
              r*)))
       ((alpha r old-tags)

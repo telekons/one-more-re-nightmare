@@ -76,7 +76,11 @@
       ((join r s) (join (remove-tags r) (remove-tags s)))
       ((kleene r) (kleene (remove-tags r)))
       ((invert r) (kleene (remove-tags r)))
-      ((alpha r _) (remove-tags r))
+      ((alpha r s)
+       (either (remove-tags r)
+               (if (eq s (empty-set))
+                   (empty-set)
+                   (empty-string))))
       ((grep r s) (grep (remove-tags r) (remove-tags s)))
       (_ re))))
 
