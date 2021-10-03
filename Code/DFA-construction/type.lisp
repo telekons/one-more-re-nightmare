@@ -19,7 +19,7 @@
 
 (defmacro define-type ((name &rest slots) &key simplify hash-cons printer)
   (let ((variables (loop for slot in slots collect (gensym (symbol-name slot))))
-        (internal-creator (alexandria:format-symbol nil "%~a" name))
+        (internal-creator (alexandria:format-symbol t "%~a" name))
         (table-name (alexandria:format-symbol '#:one-more-re-nightmare
                                               "*~A-TABLE*" name)))
     `(progn
@@ -34,10 +34,12 @@
        (define-hash-consing-table ,table-name)
        
        (defun ,internal-creator ,slots
-         (let ((instance (make-instance ',name)))
-           ,@(loop for slot in slots
-                   collect `(setf (slot-value instance ',slot) ,slot))
-           instance))
+         (or (gethash (list ,@slots) ,table-name)
+             (let ((instance (make-instance ',name)))
+               ,@(loop for slot in slots
+                       collect `(setf (slot-value instance ',slot) ,slot))
+               (setf (gethash (list ,@slots) ,table-name)
+                     instance))))
        (defmethod print-object ((instance ,name) stream)
          ,(if (null printer)
               `(write (list ',name ,@(loop for slot in slots
@@ -53,9 +55,7 @@
                    collect `((list ,@pattern)
                              (or (gethash (list ,@replacement) ,table-name)
                                  (trivia.next:next))))
-           (_ (or (gethash (list ,@slots) ,table-name)
-                  (setf (gethash (list ,@slots) ,table-name)
-                        (,internal-creator ,@slots)))))))))
+           (_ (,internal-creator ,@slots)))))))
 (indent:define-indentation define-type (4 &body))
 
 (defmacro with-hash-consing ((table key) &body body)
