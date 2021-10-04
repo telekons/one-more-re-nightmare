@@ -1,7 +1,8 @@
 (asdf:defsystem :one-more-re-nightmare
   :depends-on (:trivia :alexandria :babel
                :esrap :trivial-indent
-               :dynamic-mixins :stealth-mixin)
+               :dynamic-mixins :stealth-mixin
+               :bordeaux-threads)
   :serial t
   :components ((:file "package")
                (:module "DFA-construction"
