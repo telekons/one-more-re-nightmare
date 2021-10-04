@@ -4,6 +4,9 @@
   "Is a regular expression basically an empty string?
 This is different to NULLABLE, yes, NULLABLE would accept e.g. a* or anything that is a superset of { \"\" }, but this accepts only the empty string (± tags)."
   ((or (empty-string) (tag-set _)) t)
+  ;; The innards of a grep vector. If we start an alternation with an
+  ;; empty ALPHA, then the earliest scanner in the vector won.
+  ((either (alpha (or (empty-set) (tag-set _)) _) _) t)
   ((alpha r s)
    (or (and (re-empty-p s)
             (eq (empty-set) r))
