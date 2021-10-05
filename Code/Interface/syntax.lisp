@@ -2,8 +2,7 @@
 
 (defvar *next-group*)
 (defun next-group ()
-  (prog1 *next-group*
-    (incf *next-group*)))
+  (incf *next-group*))
 
 (esrap:defrule escaped-character
     (and #\\ character)
@@ -54,13 +53,13 @@ under-either | under-either
     (join expression (kleene expression))))
 
 (esrap:defrule either
-    (and under-either "|" under-either)
+    (and under-either "|" (or either under-either))
   (:destructure (e1 bar e2)
     (declare (ignore bar))
     (either e1 e2)))
 
 (esrap:defrule both
-    (and under-both "&" under-both)
+    (and under-both "&" (or both under-both))
   (:destructure (e1 bar e2)
     (declare (ignore bar))
     (both e1 e2)))
@@ -96,5 +95,6 @@ under-either | under-either
     (or two-expressions expression))
 
 (defun parse-regular-expression (string)
-  (let ((*next-group* 1))
-    (esrap:parse 'expressions string)))
+  (let ((*next-group* 0))
+    (values (esrap:parse 'expressions string)
+            *next-group*)))

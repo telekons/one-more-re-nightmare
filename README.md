@@ -7,9 +7,10 @@ expressions. To actual machine code (well, Common Lisp, it goes to machine
 code if you use a Lisp implementation that generates machine code somehow.)
 It's probably quite fast.
 
-Thanks to Gilbert Baumann for suggesting I use derivatives to compile regular
-expressions, and my discrete mathematics teachers for properly introducing me
-to finite state machines.
+Thanks to Gilbert Baumann for suggesting I use derivatives to compile
+regular expressions, and then for informing me of how to handle
+submatching properly, and my discrete mathematics teachers for
+formally introducing me to finite state machines.
 
 ## High level interface
 
@@ -17,10 +18,14 @@ The high level interface implicitly caches and compiles regular expressions,
 specialised to its input vectors. 
 
 `(all-matches regular-expression vector &key start end)` returns a list of all
-`(start end)`s of each match found.
+`(start end submatch)`s of each match found.
+
+(`submatch` is a vector consisting of either vector indices or `nil`,
+consisting of the start of the first group, then the first end, then the second
+start, and so on.)
 
 `all-string-matches` takes the same arguments and returns a list of all 
-subsequences matching.
+subsequences matching, and a list of vectors of submatch subsequences.
 
 `(first-match regular-expression vector &key start end)` returns the start and 
 end of the first match as multiple values, or two `NIL`s if no match was found.
@@ -83,9 +88,11 @@ many matching operations with few expressions. It does cache compiled
 expressions when using the high-level interface, so the initial cost may 
 amortize well over many calls.
 
+TODO: check again on the other implementations
+
 | engine           | SBCL      | Clozure CL | ECL        | ABCL       |
 |------------------|-----------|------------|------------|------------|
-| o-m-r-n          | 2.59ms    | 3.78ms     | 1.83ms     | 5.83ms     |
-| compilation time | 4.54ms    | 2.38ms     | 230ms      | 3.10ms     |
-| cl-ppcre         | 22.8ms    | 40.1ms     | 225ms      | 239ms      |
-| break even after | 224kchars | 65.5kchars | 1.03Mchars | 13.3kchars |
+| o-m-r-n          | 0.81ms    | 4.18ms     | 1.38ms     | 5.13ms     |
+| compilation time | 4.54ms    | 4.08ms     | 200ms      | 9.21ms     |
+| cl-ppcre         | 22.8ms    | 39.4ms     | 279ms      | 345ms      |
+| break even after | 206kchars | 118kchars  | 720kchars  | 33.6kchars |

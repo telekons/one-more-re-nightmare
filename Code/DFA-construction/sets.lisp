@@ -2,8 +2,8 @@
 
 (defclass symbol-set () ())
 
-(defvar *positives*
-  (trivial-garbage:make-weak-hash-table :test 'equal :weakness :value))
+(define-hash-consing-table *positives*)
+
 (defclass positive-symbol-set (symbol-set)
   ((elements :initarg :elements :reader elements))
   (:documentation "A set represented by the elements it contains."))
@@ -17,15 +17,19 @@
       (setf (gethash initargs *positives*)
             (call-next-method))))
 
-(defvar *negatives*
-  (trivial-garbage:make-weak-hash-table :test 'equal :weakness :value))
+(define-hash-consing-table *negatives*)
+
 (defclass negative-symbol-set (symbol-set)
   ((elements :initarg :elements :reader elements))
   (:documentation "A set represented by the elements it does not contain."))
 (defmethod print-object ((set negative-symbol-set) stream)
-  (if *print-readably*
-      (call-next-method)
-      (format stream "Σ \\ { ~{~a~^, ~} }" (elements set))))
+  (cond
+    (*print-readably*
+     (call-next-method))
+    ((null (elements set))
+     (format stream "Σ"))
+    (t
+     (format stream "Σ \\ { ~{~a~^, ~} }" (elements set)))))
 (defmethod make-instance ((class (eql (find-class 'negative-symbol-set)))
                           &rest initargs &key)
   (or (gethash initargs *negatives*)
@@ -81,17 +85,13 @@
   (:method ((set positive-symbol-set))
     (null (elements set))))
 
-(defgeneric symbol-set-equal (set1 set2)
-  (:method (s1 s2) nil)
-  (:method ((s1 positive-symbol-set) (s2 positive-symbol-set))
-    (set-equal (elements s1) (elements s2)))
-  (:method ((s1 negative-symbol-set) (s2 negative-symbol-set))
-    (set-equal (elements s1) (elements s2))))
+(defun symbol-set-difference (set1 set2)
+  (set-intersection set1 (set-inverse set2)))
 
-(defgeneric make-test-form (set variable)
-  (:method ((set positive-symbol-set) variable)
+(defgeneric make-test-form (set variable test)
+  (:method ((set positive-symbol-set) variable test)
     `(or ,@(loop for element in (elements set)
-                 collect `(eql ,variable ',element))))
-  (:method ((set negative-symbol-set) variable)
+                 collect `(,test ,variable ',element))))
+  (:method ((set negative-symbol-set) variable test)
     `(not (or ,@(loop for element in (elements set)
-                      collect `(eql ,variable ',element))))))
+                      collect `(,test ,variable ',element))))))
