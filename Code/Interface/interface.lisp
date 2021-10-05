@@ -78,23 +78,19 @@
 (defun first-match (regular-expression vector
                     &key (start 0) (end (length vector)))
   "Returns the start, end positions and submatches of the first match, or NIL, NIL and NIL"
-  (multiple-value-bind (function tags)
-      (find-compiled-regular-expression regular-expression
-                                        vector)
-    (let ((tag-vector (if (zerop tags)
-                          *empty-vector*
-                          (make-array tags))))
+  (destructuring-bind (function groups)
+      (find-code regular-expression (string-type-of vector))
+    (let ((tag-vector (make-array (match-vector-size groups))))
       (funcall function vector start end tag-vector
-               (lambda (start end)
-                 (return-from first-match (values start end tag-vector))))
-      (values nil nil nil))))
+               (lambda ()
+                 (return-from first-match tag-vector)))
+      nil)))
 
 (defun first-string-match (regular-expression vector
                            &key (start 0) (end (length vector)))
   "Returns the first match or NIL"
-  (multiple-value-bind (start end)
-      (first-match regular-expression vector
-                   :start start :end end)
-    (if (null start)
+  (let ((results (first-match regular-expression vector
+                              :start start :end end)))
+    (if (null results)
         nil
-        (subseq vector start end))))
+        (subseq vector (svref results 0) (svref results 1)))))
