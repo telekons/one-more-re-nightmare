@@ -1,19 +1,27 @@
 (in-package :one-more-re-nightmare)
 
-(defun match-vector-size (groups)
-  (* 2 (1+ groups)))
+(defmacro collect ((function) &body body)
+  (alexandria:with-gensyms (list tail)
+    `(let* ((,list (list 'nil))
+            (,tail ,list))
+       (flet ((,function (element)
+                (let ((new-tail (list element)))
+                  (setf (cdr ,tail) new-tail
+                        ,tail new-tail))))
+         (declare (dynamic-extent #',function)
+                  (inline ,function))
+         ,@body
+         (cdr ,list)))))
 
 (defun %all-matches (code vector start end)
   (assert (and (<= end (length vector))
                (<= start end)))
-  (destructuring-bind (function groups) code
-    (let ((match (make-array (match-vector-size groups)
-                             :initial-element nil))
-          (results '()))
+  (let ((function (cached-code-function code))
+        (match (cached-code-result-vector code)))
+    (collect (result)
       (funcall function vector start end match
                (lambda ()
-                 (push (copy-seq match) results)))
-      (reverse results))))
+                 (result (copy-seq match)))))))
   
 (defun all-matches (regular-expression vector
                     &key (start 0) (end (length vector)))

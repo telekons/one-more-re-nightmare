@@ -64,7 +64,9 @@
   :simplify (((grep r _)
               (if (eq (nullable r) (empty-set))
                   (trivia.next:next)
-                  r)))
+                  r))
+             ((grep (empty-set) _)
+              (empty-set)))
   :printer ((grep r _)
             (format stream "γ[~a]" r)))
 
