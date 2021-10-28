@@ -1,6 +1,8 @@
 (in-package :one-more-re-nightmare)
 
+(declaim (inline match-vector-size))
 (defun match-vector-size (groups)
+  (declare ((unsigned-byte 32) groups))
   (* 2 (1+ groups)))
 
 (defmacro collect ((function) &body body)
@@ -16,7 +18,9 @@
          ,@body
          (cdr ,list)))))
 
+(declaim (inline %all-matches))
 (defun %all-matches (code vector start end)
+  (declare (alexandria:array-index start end))
   (assert (and (<= end (length vector))
                (<= start end)))
   (destructuring-bind (function groups) code
@@ -87,16 +91,31 @@
         `(mapcar (lambda (match) (subsequences ,vector match))
                  (%all-matches ,code ,vector ,start ,(if end-p end `(length ,vector)))))))
 
-(defun first-match (regular-expression vector
-                    &key (start 0) (end (length vector)))
-  "Returns the start, end positions and submatches of the first match, or NIL, NIL and NIL"
-  (destructuring-bind (function groups)
-      (find-code regular-expression (string-type-of vector))
+(declaim (inline %first-match))
+(defun %first-match (code vector start end)
+  (declare (alexandria:array-index start end))
+  (assert (and (<= end (length vector))
+               (<= start end)))
+  (destructuring-bind (function groups) code
     (let ((tag-vector (make-array (match-vector-size groups))))
       (funcall function vector start end tag-vector
                (lambda ()
-                 (return-from first-match tag-vector)))
+                 (return-from %first-match tag-vector)))
       nil)))
+
+(defun first-match (regular-expression vector
+                    &key (start 0) (end (length vector)))
+  "Returns the start, end positions and submatches of the first match, or NIL, NIL and NIL"
+  (%first-match (find-code regular-expression (string-type-of vector))
+                vector start end))
+
+(define-compiler-macro first-match (&whole w
+                                    regular-expression vector
+                                    &key (start 0) (end nil end-p))
+  (if (stringp regular-expression)
+      (with-code-for-vector (code vector regular-expression)
+        `(%first-match ,code ,vector ,start ,(if end-p end `(length ,vector))))
+      w))
 
 (defun first-string-match (regular-expression vector
                            &key (start 0) (end (length vector)))
@@ -106,3 +125,12 @@
     (if (null results)
         nil
         (subseq vector (svref results 0) (svref results 1)))))
+
+(define-compiler-macro first-string-match (&whole w
+                                           regular-expression vector
+                                           &key (start 0) (end nil end-p))
+  (if (stringp regular-expression)
+      (with-code-for-vector (code vector regular-expression)
+        `(subsequences ,vector
+                       (%first-match ,code ,vector ,start ,(if end-p end `(length ,vector)))))
+      w))
