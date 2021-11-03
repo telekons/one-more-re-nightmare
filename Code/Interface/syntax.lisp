@@ -11,7 +11,7 @@
     char))
 
 (esrap:defrule special-character
-    (or "(" ")" "«" "»" "¬" "~" "|" "&" "*" "∑" "$" "+"))
+    (or "(" ")" "«" "»" "[" "]" "{" "}" "¬" "~" "|" "&" "*" "∑" "$" "+"))
 
 #|
 «expression*»
@@ -74,8 +74,30 @@ under-either | under-either
     (or "∑" "$")
   (:constant (universal-set)))
 
+(esrap:defrule integer
+    (+ (or "0" "1" "2" "3" "4" "5" "6" "7" "8" "9"))
+  (:lambda (list)
+    (parse-integer (format nil "~{~A~}" list))))
+
+(esrap:defrule repeated
+    (and expression* "{" integer "}")
+  (:destructure (e left count right)
+    (declare (ignore left right))
+    (reduce #'join (make-array count :initial-element e)
+            :key #'unique-tags)))
+
+(esrap:defrule character-range
+    (and "[" character "-" character "]")
+  (:destructure (left c1 dash c2 right)
+    (declare (ignore left dash right))
+    (loop for n from (char-code c1) to (char-code c2)
+          collect (code-char n) into characters
+          finally (return
+                    (literal
+                     (make-instance 'positive-symbol-set :elements characters))))))
+
 (esrap:defrule expression*
-    (or match-group parens invert universal-set literal))
+    (or repeated character-range match-group parens invert universal-set literal))
 
 (esrap:defrule under-either
     (or plus kleene expression*))
