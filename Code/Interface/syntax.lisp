@@ -51,7 +51,7 @@ under-either | under-either
     (and expression "+")
   (:destructure (expression plus)
     (declare (ignore plus))
-    (join expression (kleene expression))))
+    (join expression (either (nullable expression) (kleene expression)))))
 
 (esrap:defrule either
     (and under-either "|" (or either under-either))
