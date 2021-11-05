@@ -40,18 +40,23 @@ under-either | under-either
         (declare (ignore left right))
         (group expressions group-number)))))
 
+(defun empty-match (expression)
+  (if (eq (empty-set) (nullable expression))
+      (empty-set)
+      (tag-set (unique-assignments (effects expression)))))
+
 (esrap:defrule kleene
     (and expression "*")
   (:destructure (expression star)
     (declare (ignore star))
-    (either (nullable expression)
+    (either (empty-match expression)
             (kleene expression))))
 
 (esrap:defrule plus
     (and expression "+")
   (:destructure (expression plus)
     (declare (ignore plus))
-    (join expression (either (nullable expression) (kleene expression)))))
+    (join expression (either (empty-match expression) (kleene expression)))))
 
 (esrap:defrule either
     (and under-either "|" (or either under-either))
