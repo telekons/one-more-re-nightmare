@@ -44,7 +44,8 @@ under-either | under-either
     (and expression "*")
   (:destructure (expression star)
     (declare (ignore star))
-    (kleene expression)))
+    (either (nullable expression)
+            (kleene expression))))
 
 (esrap:defrule plus
     (and expression "+")
