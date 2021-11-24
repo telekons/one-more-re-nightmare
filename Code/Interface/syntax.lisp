@@ -23,7 +23,7 @@ under-either | under-either
 (esrap:defrule literal
     (* (or escaped-character (not special-character)))
   (:destructure (&rest characters)
-    (text (coerce characters 'string))))
+    (text characters)))
 
 (esrap:defrule parens
     (and "(" expressions ")")
@@ -96,11 +96,7 @@ under-either | under-either
     (and "[" character "-" character "]")
   (:destructure (left c1 dash c2 right)
     (declare (ignore left dash right))
-    (loop for n from (char-code c1) to (char-code c2)
-          collect (code-char n) into characters
-          finally (return
-                    (literal
-                     (make-instance 'positive-symbol-set :elements characters))))))
+    (literal (symbol-range (char-code c1) (1+ (char-code c2))))))
 
 (esrap:defrule expression*
     (or repeated character-range match-group parens invert universal-set literal))

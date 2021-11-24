@@ -2,8 +2,7 @@
 
 (defun merge-sets (sets1 sets2)
   "Produce a list of every subset of sets1 and sets2."
-  ;; We hash-cons sets too, so EQ would suffice.
-  (let ((sets (make-hash-table :test 'eq)))
+  (let ((sets (make-hash-table :test 'equal)))
     (loop for set1 in sets1
           do (loop for set2 in sets2
                    for intersection = (set-intersection set1 set2)
@@ -20,7 +19,7 @@
       ((literal set)  (list set (set-inverse set)))
       ((or (empty-string)
            (tag-set _))
-       (list (make-instance 'negative-symbol-set :elements '())))
+       (list +universal-set+))
       ((join r s)
        (if (eq (nullable r) (empty-set))
            (derivative-classes r)

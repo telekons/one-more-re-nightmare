@@ -2,18 +2,7 @@
 
 (define-type (literal set)
   :printer ((literal set)
-            (let ((es (elements set)))
-              (case (length es)
-                (0
-                 (if (typep set 'negative-symbol-set)
-                     (write-char #\Σ stream)
-                     (write-char #\ø stream)))
-                (1
-                 (if (typep set 'negative-symbol-set)
-                     (format stream "(¬~a)" (first es))
-                     (format stream "~a" (first es))))
-                (otherwise
-                 (format stream "~a" set))))))
+            (print-isum set stream)))
 
 (defun empty-set ()
   (literal (symbol-set)))
@@ -145,8 +134,9 @@
             (format stream "~a~a" r s)))
 
 (defun text (vector)
-  (reduce #'join (map 'vector (lambda (e)
-                                (literal (symbol-set e)))
+  (reduce #'join (map 'vector
+                      (lambda (e)
+                        (literal (symbol-set (char-code e))))
                       vector)
           :initial-value (empty-string) 
           :from-end t))

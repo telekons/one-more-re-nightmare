@@ -1,97 +1,140 @@
 (in-package :one-more-re-nightmare)
 
-(defclass symbol-set () ())
+;;; Gilbert Baumann's isum.lisp
 
-(define-hash-consing-table *positives*)
+;; MAKE-TEST-FORM
 
-(defclass positive-symbol-set (symbol-set)
-  ((elements :initarg :elements :reader elements))
-  (:documentation "A set represented by the elements it contains."))
-(defmethod print-object ((set positive-symbol-set) stream)
-  (if *print-readably*
-      (call-next-method)
-      (format stream "{ ~{~a~^, ~} }" (elements set))))
-(defmethod make-instance ((class (eql (find-class 'positive-symbol-set)))
-                          &rest initargs &key)
-  (or (gethash initargs *positives*)
-      (setf (gethash initargs *positives*)
-            (call-next-method))))
+;; To support large character sets, we need an implemention of a set of
+;; characters. Traditional scanner generators would at some place just
+;; enumerate the alphabet \Sigma, which is not feasible with large character
+;; sets like Unicode.
 
-(define-hash-consing-table *negatives*)
+;; We handle all transitions in the automaton as a set of of the codes of
+;; characters, expressed by an ISUM. The representation of such a set is
+;; best defined by the ISUM-MEMBER function, but here is an overview to get
+;; the idea:
 
-(defclass negative-symbol-set (symbol-set)
-  ((elements :initarg :elements :reader elements))
-  (:documentation "A set represented by the elements it does not contain."))
-(defmethod print-object ((set negative-symbol-set) stream)
-  (cond
-    (*print-readably*
-     (call-next-method))
-    ((null (elements set))
-     (format stream "Σ"))
-    (t
-     (format stream "Σ \\ { ~{~a~^, ~} }" (elements set)))))
-(defmethod make-instance ((class (eql (find-class 'negative-symbol-set)))
-                          &rest initargs &key)
-  (or (gethash initargs *negatives*)
-      (setf (gethash initargs *negatives*)
-            (call-next-method))))
+;;     ()           is the empty set
+;;     (a b)        is the set [a, b)
+;;     (a b c d)    is the set [a, b) u [c, d)
+;;     (nil)        is everything
+;;     (nil a b)    is everything but [a, b)
 
-(defun symbol-set (&rest elements)
-  (make-instance 'positive-symbol-set :elements elements))
+;; An ISUM is a sequence of stricly monotonic increasing integers. The idea
+;; is that when you sweep a pointer over the list at each element found the
+;; membership in the set changes. Like (1 10 12 15). You start outside the
+;; set, find 1 and say "above or equal 1 is in the set" and then find 10 and
+;; say "above or equal 10 is not in the set" and so on. This way it is very
+;; easy to implement Boolean operations on sets.
 
-(defun set-equal (set1 set2)
-  (null (set-exclusive-or set1 set2)))
+(alexandria:define-constant +empty-set+ '() :test 'equal)
+(alexandria:define-constant +universal-set+ '(nil) :test 'equal)
 
-(defgeneric set-union (set1 set2)
-  (:method ((set1 positive-symbol-set) (set2 positive-symbol-set))
-    (make-instance 'positive-symbol-set
-                   :elements (union (elements set1) (elements set2))))
-  (:method ((set1 positive-symbol-set) (set2 negative-symbol-set))
-    (make-instance 'negative-symbol-set
-                   :elements (set-difference (elements set2)
-                                             (elements set1))))
-  (:method ((set1 negative-symbol-set) (set2 positive-symbol-set))
-    (make-instance 'negative-symbol-set
-                   :elements (set-difference (elements set1)
-                                             (elements set2))))
-  (:method ((set1 negative-symbol-set) (set2 negative-symbol-set))
-    (make-instance 'positive-symbol-set
-                   :elements (intersection (elements set1) (elements set2)))))
+(defun singleton-set (x)
+  "Returns the ISUM, that contains only /x/."
+  (list x (1+ x)))
 
-(defgeneric set-intersection (set1 set2)
-  (:method ((set1 positive-symbol-set) (set2 positive-symbol-set))
-    (make-instance 'positive-symbol-set
-                   :elements (intersection (elements set1) (elements set2))))
-  (:method ((set1 positive-symbol-set) (set2 negative-symbol-set))
-    (make-instance 'positive-symbol-set
-                   :elements (set-difference (elements set1)
-                                             (elements set2))))
-  (:method ((set1 negative-symbol-set) (set2 positive-symbol-set))
-    (make-instance 'positive-symbol-set
-                   :elements (set-difference (elements set2)
-                                             (elements set1))))
-  (:method ((set1 negative-symbol-set) (set2 negative-symbol-set))
-    (make-instance 'negative-symbol-set
-                   :elements (union (elements set1) (elements set2)))))
+(defun symbol-range (from below)
+  "Returns the ISUM, that contains every code point that is in [from, below)"
+  (list from below))
 
-(defgeneric set-inverse (set)
-  (:method ((set positive-symbol-set))
-    (make-instance 'negative-symbol-set :elements (elements set)))
-  (:method ((set negative-symbol-set))
-    (make-instance 'positive-symbol-set :elements (elements set))))
+;;; Boolean operation on ISUMs
 
-(defgeneric set-null (set)
-  (:method ((set negative-symbol-set)) nil)
-  (:method ((set positive-symbol-set))
-    (null (elements set))))
+(defmacro isum-op (op A B)
+  "Combine the sets A and B by the Boolean operator op, which should be a
+valid argument to the BOOLE function. An integer x is member of the
+resulting set iff
+     (logbitp 0 (boole op (if (isum-member x A) 1 0) (if (isum-member x B) 1 0)))
+ is non-NIL. That way e.g. boole-ior denotes the union."
+  `(let ((A ,A)
+         (B ,B))
+     (let* ((Ain 0)
+            (Bin 0)
+            (Cin 0)
+            (s nil)
+            (res (cons nil nil))
+            (resf res))
+       ;; Get rid of an initial NIL, which indicates a complemented set.
+       (when (and A (null (car A)))
+         (pop A) (setq Ain (- 1 Ain)))
+       (when (and B (null (car B)))
+         (pop B) (setq Bin (- 1 Bin)))
+       ;; Now traverse A and B in parallel and generate the resulting sequence.
+       (loop
+         (when (/= Cin (ldb (byte 1 0) (boole ,op Ain Bin)))
+           (setf resf (setf (cdr resf) (cons s nil)))
+           (setf Cin (- 1 Cin)))
+         (cond ((null A)
+                (cond ((null B)
+                       (return))
+                      (t
+                       (setq s (pop B))
+                       (setq Bin (- 1 Bin)))))
+               ((null B)
+                (setq s (pop A)) (setq Ain (- 1 Ain)))
+               ((< (car A) (car B))
+                (setq s (pop A)) (setq Ain (- 1 Ain)))
+               ((< (car B) (car A))
+                (setq s (pop B)) (setq Bin (- 1 Bin)))
+               (t
+                (setq s (pop A)) (setq Ain (- 1 Ain))
+                (pop B) (setq Bin (- 1 Bin)))))
+       (cdr res))))
 
-(defun symbol-set-difference (set1 set2)
-  (set-intersection set1 (set-inverse set2)))
+;; Now we could define interesting set operations in terms of ISUM-OP.
 
-(defgeneric make-test-form (set variable test)
-  (:method ((set positive-symbol-set) variable test)
-    `(or ,@(loop for element in (elements set)
-                 collect `(,test ,variable ',element))))
-  (:method ((set negative-symbol-set) variable test)
-    `(not (or ,@(loop for element in (elements set)
-                      collect `(,test ,variable ',element))))))
+(defun set-union (a b)             (isum-op boole-ior a b))
+(defun set-intersection (a b)      (isum-op boole-and a b))
+(defun symbol-set-difference (a b) (isum-op boole-andc2 a b))
+(defun set-inverse (a)             (isum-op boole-c1 a nil))
+(defun set-null (isum)             (null isum))
+
+(defun symbol-set (&rest symbols)
+  (reduce #'set-union symbols :key #'singleton-set :initial-value +empty-set+))
+
+(trivia:defpattern single-isum-case (a next)
+  (alexandria:with-gensyms (succ)
+    `(trivia:guard (list* ,a ,succ ,next)
+                   (= ,succ (1+ ,a)))))
+
+(defun fold-or (form next)
+  "Manually constant fold out (OR A NIL) to A. The compiler can do this, but generated code looks nicer with folding."
+  (if (eql next 'nil)
+      form
+      `(or ,form ,next)))
+
+(defun make-test-form (isum variable less-or-equal less equal)
+  (trivia:ematch isum
+    ('() 'nil)
+    ((list* nil next)
+     (trivia:match (make-test-form next variable less-or-equal less equal)
+       ('nil 't)
+       (form `(not ,form))))
+    ((single-isum-case a next)
+     (fold-or `(,equal ,a ,variable)
+              (make-test-form next variable less-or-equal less equal)))
+    ((list* low high next)
+     (fold-or `(and (,less-or-equal ,low ,variable) (,less ,variable ,high))
+              (make-test-form next variable less-or-equal less equal)))))
+
+(defun print-isum (isum stream)
+  (labels ((print-union (rest)
+             (trivia:ematch rest
+               ('())
+               ((single-isum-case a next)
+                (write-char (code-char a) stream)
+                (print-union next))
+               ((list* a b next)
+                (format stream "~c-~c" (code-char a) (code-char (1- b)))
+                (print-union next)))))
+    (trivia:ematch isum
+      ('() (write-string "ø" stream))
+      ((single-isum-case a 'nil)
+       (write-char (code-char a) stream))
+      ((list* 'nil (single-isum-case a 'nil))
+       (format stream "(¬~c)" (code-char a)))
+      ((list* nil rest)
+       (write-string "[¬" stream)
+       (print-union rest)
+       (write-string "]" stream))
+      (_ (print-union isum)))))

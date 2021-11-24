@@ -114,12 +114,15 @@
                     (setf start (max position (1+ start)))
                     (win ,@(win-locations (state-exit-map state))))))
           ,(find-state-name state :no-bounds-check)
-          (let ((value (,(layout-ref *layout*) vector position)))
+          (let ((value (,(layout-to-number *layout*)
+                        (,(layout-ref *layout*) vector position))))
             (cond
               ,@(loop for transition in (state-transitions state)
                       collect `(,(make-test-form (transition-class transition)
                                                  'value
-                                                 (layout-test *layout*))
+                                                 (layout-less-or-equal *layout*)
+                                                 (layout-less *layout*)
+                                                 (layout-equal *layout*))
                                 ,(transition-code state transition))))))))
 
 (defun transition-code (previous-state transition)
