@@ -21,7 +21,7 @@
   (multiple-value-bind (function groups)
       (compile-regular-expression
        regular-expression
-       :layout (make-layout :array-type type-specifier))
+       :layout (make-layout type-specifier))
     (bt:with-lock-held (*code-lock*)
       (setf (gethash (list (copy-seq regular-expression)
                            type-specifier)

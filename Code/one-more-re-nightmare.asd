@@ -19,6 +19,8 @@
                              (:file "make-dfa")))
                (:module "Compiler"
                 :components ((:file "compilation-strategy")
+                             (:file "lie-to-sbcl-about-types"
+                              :if-feature (:and :sbcl :x86-64))
                              (:file "layout")
                              (:file "length-inference")
                              (:file "optimize-settings")

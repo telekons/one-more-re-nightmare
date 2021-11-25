@@ -33,7 +33,10 @@
           (setf (gethash (cons state entry-point) names)
                 (incf (next-state-name *compiler-state*)))))))
 
-(defun compile-regular-expression (expression &key (layout *default-layout*))
+(defun compile-regular-expression (expression
+                                   &key
+                                   (element-type 'character)
+                                   (layout (make-layout `(simple-array ,element-type 1))))
   (let ((*layout* layout))
     (with-hash-consing-tables ()
       (multiple-value-bind (expression groups)

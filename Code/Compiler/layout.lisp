@@ -1,6 +1,6 @@
 (in-package :one-more-re-nightmare)
 
-(defstruct layout
+(defstruct (layout (:constructor %make-layout))
   "A structure representing the type and accessors for a vector of some sort."
   (array-type '(simple-array character 1))
   (ref 'aref)
@@ -9,4 +9,12 @@
   (less-or-equal '<=)
   (equal '=))
 
-(defvar *default-layout* (make-layout))
+(defun make-layout (array-type)
+  (if #+(and sbcl x86-64) (equal array-type '(simple-array character 1))
+      #-(and sbcl x86-64) nil
+      (%make-layout
+       :array-type array-type
+       :ref '%string-ref
+       :to-number 'identity)
+      (%make-layout
+       :array-type array-type)))
