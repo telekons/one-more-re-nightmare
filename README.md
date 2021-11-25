@@ -44,23 +44,22 @@ end of each match in the `vector` between `start` and `end`.
 
 The following expressions can be used:
 
-| Regular expression | o-m-r-n constructor | string syntax |
-|--------------------|---------------------|---------------|
-| ε                  | (empty-string)      |               |
-| ∅                  | (empty-set)         |               |
-| ∑                  | (universal-set)     | ∑ or $        |
-| r*                 | (kleene r)          | R*            |
-| r + s              | (either r s)        | R\|S          |
-|                    | (join r (kleene r)) | R+            |
-| r s                | (join r s)          | RS            |
-| ¬r                 | (invert r)          | ¬R or `R      |
-| r & s              | (both r s)          | R&S           |
-| ABC                | (text "ABC")        | ABC           |
-|                    | (group r n)         | «R»           |
+| Regular expression | string syntax |
+|--------------------|---------------|
+| ε                  |               |
+| ∅                  |               |
+| ∑                  | ∑ or $        |
+| r*                 | R*            |
+| r + s              | R\|S          |
+|                    | R+            |
+| r s                | RS            |
+| ¬r                 | ¬R or `R      |
+| r & s              | R&S           |
+| ABC                | ABC           |
+|                    | «R»           |
+| r^n                | R{n}          |
+| a + b + ... z      | [a-z]         |
 
-
-As specified by the paper, these constructors perform some simplification and 
-hash-consing, allowing regular expressions to be compared with `eq`.
 
 `¬R` binds tighter than `R*`, so `¬R*` parses as `(kleene (invert R))`.
 `R|S` also binds tighter than `R&S`, so `A|B&C|D` parses as 
@@ -87,8 +86,6 @@ will take longer to compile a regular expression, so it is better suited for
 many matching operations with few expressions. It does cache compiled 
 expressions when using the high-level interface, so the initial cost may 
 amortize well over many calls.
-
-TODO: check again on the other implementations
 
 | engine           | SBCL      | Clozure CL | ECL        | ABCL       |
 |------------------|-----------|------------|------------|------------|
