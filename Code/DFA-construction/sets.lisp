@@ -103,19 +103,19 @@ resulting set iff
       form
       `(or ,form ,next)))
 
-(defun make-test-form (isum variable less-or-equal less equal)
+(defun make-test-form (isum variable less-or-equal equal)
   (trivia:ematch isum
     ('() 'nil)
     ((list* nil next)
-     (trivia:match (make-test-form next variable less-or-equal less equal)
+     (trivia:match (make-test-form next variable less-or-equal equal)
        ('nil 't)
        (form `(not ,form))))
     ((single-isum-case a next)
      (fold-or `(,equal ,a ,variable)
-              (make-test-form next variable less-or-equal less equal)))
+              (make-test-form next variable less-or-equal equal)))
     ((list* low high next)
-     (fold-or `(and (,less-or-equal ,low ,variable) (,less ,variable ,high))
-              (make-test-form next variable less-or-equal less equal)))))
+     (fold-or `(,less-or-equal ,low ,variable (1- ,high))
+              (make-test-form next variable less-or-equal equal)))))
 
 (defun print-isum (isum stream)
   (labels ((print-union (rest)

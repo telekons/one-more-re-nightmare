@@ -121,7 +121,6 @@
                       collect `(,(make-test-form (transition-class transition)
                                                  'value
                                                  (layout-less-or-equal *layout*)
-                                                 (layout-less *layout*)
                                                  (layout-equal *layout*))
                                 ,(transition-code state transition))))))))
 

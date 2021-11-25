@@ -7,7 +7,6 @@
   (from-number 'code-char)
   (to-number 'char-code)
   (less-or-equal '<=)
-  (less '<)
   (equal '=))
 
 (defvar *default-layout* (make-layout))
