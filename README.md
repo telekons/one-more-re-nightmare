@@ -44,14 +44,12 @@ end of each match in the `vector` between `start` and `end`.
 
 The following expressions can be used:
 
-| Regular expression | string syntax |
+| Regular expression | String syntax |
 |--------------------|---------------|
-| ε                  |               |
-| ∅                  |               |
 | ∑                  | ∑ or $        |
 | r*                 | R*            |
 | r + s              | R\|S          |
-|                    | R+            |
+| r r*               | R+            |
 | r s                | RS            |
 | ¬r                 | ¬R or `R      |
 | r & s              | R&S           |
