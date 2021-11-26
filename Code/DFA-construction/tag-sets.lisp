@@ -94,7 +94,7 @@
        (has-tags-p r))
       (_ nil))))
 
-(defvar *allow-alpha*)
+(defvar *allow-alpha* t)
 (defun map-tags (f re)
   ;; Return the same RE if we have no tags to replace.
   (unless (has-tags-p re)
