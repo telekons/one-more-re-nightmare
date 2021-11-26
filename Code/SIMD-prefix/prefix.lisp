@@ -3,14 +3,14 @@
 (trivia:defun-match prefix (re)
   "Find the constant string prefix of a regular expression."
   ((literal set)
-   (values `((:literal ,set)) (empty-set)))
+   (values `((:literal ,set)) (empty-string)))
   ((tag-set tags)
-   (values `((:tags ,tags)) (empty-set)))
+   (values `((:tags ,tags)) (empty-string)))
   ((join r s)
    (multiple-value-bind (p1 s1)
        (prefix r)
      (cond
-       ((eq (empty-set) s1)
+       ((eq (empty-string) s1)
         ;; Haven't hit something not constant, keep searching.
         (multiple-value-bind (p2 s2)
             (prefix s)
