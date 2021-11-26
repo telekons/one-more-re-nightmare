@@ -25,12 +25,21 @@
   ;; trailing \l, which is necessary even when there isn't another
   ;; line break.
   (make-instance 'cl-dot:node
-    :attributes (list :label (list :left (format nil "~A~%" (state-expression state))))))
+   :attributes (list
+                :label (list :left (format nil "~A~%" (state-expression state)))
+                :fontcolor (if (eq (empty-set) (nullable (state-expression state)))
+                               "black"
+                               "red"))))
 
-(defun escape-string (string)
-  "A lazy way to make a single backslash into two, as cl-dot won't do it."
-  (let ((printed (prin1-to-string string)))
-    (subseq printed 1 (1- (length printed)))))
+(defun trim-assignments-for-show (assignments)
+  (let ((new-assignments
+          (loop for assignment in assignments
+                for (variable replica source) = assignment
+                unless (equal (list variable replica) source)
+                  collect assignment)))
+    (if (null new-assignments)
+        ""
+        (tag-set new-assignments))))
 
 (defmethod cl-dot:graph-object-edges ((graph (eql 'dfa)))
   (let ((edges (list (list 'nothing *initial-state*))))
@@ -39,11 +48,13 @@
                (dolist (transition (state-transitions state))
                  (push (list state (transition-next-state transition)
                              (list :label
-                                   (escape-string
-                                    (format nil "~a ~a"
-                                            (transition-class transition)
-                                            (tag-set
-                                             (transition-tags-to-set transition))))))
+                                   (format nil "~a ~a"
+                                           (with-output-to-string (s)
+                                             (print-isum
+                                              (transition-class transition)
+                                              s))
+                                           (trim-assignments-for-show
+                                            (transition-tags-to-set transition)))))
                        edges)))
              *dfa*)
     edges))
