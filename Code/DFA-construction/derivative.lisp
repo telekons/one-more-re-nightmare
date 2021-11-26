@@ -59,7 +59,7 @@
                             value))))
       (map 'nil
            (lambda (element)
-             (let* ((new-re (derivative re (symbol-set element)))
+             (let* ((new-re (derivative re (symbol-set (char-code element))))
                     (effects (effects re)))
                (format t "~&~a~&  ~:c ~a"
                        re element effects)

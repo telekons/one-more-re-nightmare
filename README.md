@@ -79,15 +79,17 @@ CL-USER> (let ((s (make-string 1000000 :initial-element #\a)))
             (cl-ppcre:all-matches-as-strings "ab|ac" s)))
 ```
 
-Note that, by nature of calling the Common Lisp compiler, one-more-re-nightmare
-will take longer to compile a regular expression, so it is better suited for
-many matching operations with few expressions. It does cache compiled 
-expressions when using the high-level interface, so the initial cost may 
-amortize well over many calls.
+Note that, by nature of calling the Common Lisp compiler,
+one-more-re-nightmare will take longer to compile a regular
+expression, so it is better suited for many matching operations with
+few expressions. It does cache compiled expressions when using the
+high-level interface, so the initial cost may amortize well over many
+calls; and constant regular expression strings are compiled at
+compile-time, with no runtime overhead whatsoever.
 
-| engine           | SBCL      | Clozure CL | ECL        | ABCL       |
-|------------------|-----------|------------|------------|------------|
-| o-m-r-n          | 0.81ms    | 4.18ms     | 1.38ms     | 5.13ms     |
-| compilation time | 4.54ms    | 4.08ms     | 200ms      | 9.21ms     |
-| cl-ppcre         | 22.8ms    | 39.4ms     | 279ms      | 345ms      |
-| break even after | 206kchars | 118kchars  | 720kchars  | 33.6kchars |
+| engine           | SBCL      | Clozure CL |
+|------------------|-----------|------------|
+| o-m-r-n          | 0.57ms    | 2.93ms     |
+| compilation time | 4.65ms    | 3.76ms     |
+| cl-ppcre         | 22.8ms    | 45.3ms     |
+| break even after | 209kchars | 88.7kchars |

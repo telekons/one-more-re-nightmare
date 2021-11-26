@@ -17,36 +17,41 @@
    (%removed-tags :initform +uncomputed+ :accessor cached-removed-tags)
    (%has-tags-p :initform +uncomputed+ :accessor cached-has-tags-p)))
 
-(defmacro define-type ((name &rest slots) &key simplify hash-cons printer)
-  (let ((variables (loop for slot in slots collect (gensym (symbol-name slot))))
-        (internal-creator (alexandria:format-symbol t "%~a" name))
+(defmacro define-types (&body types)
+  (loop for (name . slots) in types
+        collect (let ((variables (loop for slot in slots collect (gensym (symbol-name slot))))
+                      (internal-creator (alexandria:format-symbol t "%~a" name))
+                      (table-name (alexandria:format-symbol '#:one-more-re-nightmare
+                                                            "*~A-TABLE*" name)))
+                  `(progn
+                     (defclass ,name (regular-expression) ,slots)
+                     (trivia:defpattern ,name ,variables
+                       (alexandria:with-gensyms (instance-name)
+                         (list 'trivia:guard1 (list instance-name ':type ',name)
+                               (list 'typep instance-name '',name)
+                               ,@(loop for slot in slots
+                                       for variable in variables
+                                       appending `((list 'slot-value instance-name '',slot) ,variable)))))
+                     (define-hash-consing-table ,table-name)
+                     (defun ,internal-creator ,slots
+                       (or (gethash (list ,@slots) ,table-name)
+                           (let ((instance (make-instance ',name)))
+                             ,@(loop for slot in slots
+                                     collect `(setf (slot-value instance ',slot) ,slot))
+                             (setf (gethash (list ,@slots) ,table-name)
+                                   instance))))))
+          into forms
+        finally (return `(progn ,@forms))))
+
+(defmacro define-rewrites ((name &rest slots) &key simplify hash-cons printer)
+  (let ((internal-creator (alexandria:format-symbol t "%~a" name))
         (table-name (alexandria:format-symbol '#:one-more-re-nightmare
                                               "*~A-TABLE*" name)))
     `(progn
-       (defclass ,name (regular-expression) ,slots)
-       (trivia:defpattern ,name ,variables
-          (alexandria:with-gensyms (instance-name)
-            (list 'trivia:guard1 (list instance-name ':type ',name)
-                (list 'typep instance-name '',name)
-               ,@(loop for slot in slots
-                       for variable in variables
-                       appending `((list 'slot-value instance-name '',slot) ,variable)))))
-       (define-hash-consing-table ,table-name)
-       
-       (defun ,internal-creator ,slots
-         (or (gethash (list ,@slots) ,table-name)
-             (let ((instance (make-instance ',name)))
-               ,@(loop for slot in slots
-                       collect `(setf (slot-value instance ',slot) ,slot))
-               (setf (gethash (list ,@slots) ,table-name)
-                     instance))))
-       (defmethod print-object ((instance ,name) stream)
-         ,(if (null printer)
-              `(write (list ',name ,@(loop for slot in slots
-                                           collect `(slot-value instance ',slot)))
-                      :stream stream)
-              `(trivia:ematch instance
-                 ,printer)))
+       ,@(unless (null printer)
+           `((defmethod print-object ((instance ,name) stream)
+               (trivia:ematch instance
+                 ,printer))))
        (defun ,name ,slots
          (trivia:match (list ,@slots)
            ,@(loop for ((nil . pattern) replacement) in simplify

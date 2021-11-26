@@ -114,7 +114,7 @@ resulting set iff
      (fold-or `(,equal ,a ,variable)
               (make-test-form next variable less-or-equal equal)))
     ((list* low high next)
-     (fold-or `(,less-or-equal ,low ,variable (1- ,high))
+     (fold-or `(,less-or-equal ,low ,variable ,(1- high))
               (make-test-form next variable less-or-equal equal)))))
 
 (defun print-isum (isum stream)
