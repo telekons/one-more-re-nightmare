@@ -1,6 +1,6 @@
 (in-package :one-more-re-nightmare)
 
-(defvar *broadcasts* (make-hash-table))
+(defvar *broadcasts*)
 (defun find-broadcast (value)
   (or (gethash value *broadcasts*)
       (setf (gethash value *broadcasts*)
@@ -37,6 +37,7 @@
   (translate-scalar-code (make-test-form isum variable '<= '=)))
 
 (defun code-from-prefix (prefix)
+  (assert (not (null prefix)) () "Why /even bother/ with a zero-length prefix?")
   (let ((tests '())
         (loads '())
         (assignments '())

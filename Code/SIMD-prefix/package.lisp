@@ -1,4 +1,5 @@
 (defpackage :one-more-re-nightmare.vector-primops
   (:use)
   (:export #:v-and #:v-or #:v-not #:v32> #:v32=
-           #:v-broadcast #:v-movemask #:v-load #:find-first-set))
+           #:v-broadcast #:v-movemask #:v-load #:find-first-set
+           #:+v-length+))

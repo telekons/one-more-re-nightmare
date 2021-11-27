@@ -4,8 +4,6 @@
   ()
   (:documentation "A compilation strategy describes how potential matches should be searched for."))
 
-(defgeneric pre-process-re (strategy expression)
-  (:documentation "Return a new RE with any modifications the strategy requires."))
 (defgeneric initial-states (strategy expression)
   (:documentation "Compute a list of states to start compiling from."))
 (defgeneric macros-for-strategy (strategy)
@@ -42,9 +40,6 @@
   ;; continue when we fail to match.
   (let ((a (add-tags expression)))
     (grep a a)))
-
-(defmethod pre-process-re ((strategy scan-everything) expression)
-  (make-search-machine expression))
 
 (defmethod initial-states ((strategy scan-everything) expression)
   (list (make-search-machine expression)))

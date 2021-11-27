@@ -208,12 +208,13 @@
                               collect (list variable replica)))))))))
         (t
          `(start
-           (when (> position end)
-             (return))
            (setf position start)
            (go ,(find-state-name state :bounds-check))))))))
 
 (defmethod start-code :around ((strategy call-continuation) states)
+  ;; Calling the continuation gets its own state as to influence the
+  ;; register allocator less. This change does actually reduce the
+  ;; number of spills substantially (at least on SBCL).
   (append (call-next-method)
           `(win
             (funcall continuation)
