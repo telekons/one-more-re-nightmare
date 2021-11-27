@@ -25,17 +25,22 @@
   ()
   (:documentation "A compilation strategy which calls a continuation when a match is found."))
 
-(defvar *default-strategy*
+(defun make-default-strategy (layout expression)
+  (declare (ignore layout expression))
   (make-instance (dynamic-mixins:mix 'scan-everything 'call-continuation)))
+
+(defun add-tags (expression)
+  (alpha
+   (join (tag-set '((start 0 position)))
+         (join expression
+               (tag-set '((end 0 position)))))
+   (empty-set)))
 
 (defun make-search-machine (expression)
   ;; We add an ALPHA wrapper to store the last end point when we
   ;; succeed but have repetition, and a GREP wrapper to make sure we
   ;; continue when we fail to match.
-  (let ((a (alpha (join (tag-set '((start 0 position)))
-                        (join expression
-                              (tag-set '((end 0 position)))))
-                  (empty-set))))
+  (let ((a (add-tags expression)))
     (grep a a)))
 
 (defmethod pre-process-re ((strategy scan-everything) expression)

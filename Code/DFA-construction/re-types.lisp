@@ -91,11 +91,11 @@
 
 (defun scan-either-for-duplicates (r s)
   (labels ((e (r s)
+             ;; We can't call EITHER, since EITHER calls us, so we
+             ;; handle simplifying out empty sets here.
              (cond
-               ((eq s (empty-set))
-                r)
-               ((eq r (empty-set))
-                s)
+               ((eq s (empty-set)) r)
+               ((eq r (empty-set)) s)
                (t (%either r s))))
            (scan (rhs)
              (trivia:match rhs

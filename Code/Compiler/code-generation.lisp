@@ -33,8 +33,11 @@
           (setf (gethash (cons state entry-point) names)
                 (incf (next-state-name *compiler-state*)))))))
 
-(defun compile-regular-expression (expression &key (layout *default-layout*))
-  (let ((*layout* layout))
+(defun compile-regular-expression (expression
+                                   &key (layout *default-layout*)
+                                        (strategy #'make-default-strategy))
+  (let ((*layout* layout)
+        (strategy (funcall strategy layout expression)))
     (with-hash-consing-tables ()
       (multiple-value-bind (expression groups)
           (parse-regular-expression expression)
@@ -43,7 +46,7 @@
            (compile nil
                     (%compile-regular-expression
                      expression
-                     *default-strategy*
+                     strategy
                      groups)))
          groups)))))
 
