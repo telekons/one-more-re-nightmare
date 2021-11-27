@@ -2,6 +2,8 @@
 
 (trivia:defun-match prefix (re)
   "Find the constant string prefix of a regular expression."
+  ((empty-set)
+   (values '() (empty-string)))
   ((literal set)
    (values `((:literal ,set)) (empty-string)))
   ((tag-set tags)

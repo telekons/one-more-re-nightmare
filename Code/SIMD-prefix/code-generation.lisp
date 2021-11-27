@@ -45,12 +45,16 @@
       (trivia:ematch part
         ((list :literal isum)
          (let ((name (make-symbol (format nil "LOAD-~d" n))))
-           (push `(,name (one-more-re-nightmare.vector-primops:v-load
-                          vector
-                          (the fixnum (+ ,n position))))
-                 loads)
-           (push (test-from-isum name isum) tests)
-           (incf n)))
+           (trivia:ematch (test-from-isum name isum)
+             (:always)
+             (:never (error "This should never happen - the empty set has no prefix!"))
+             (test
+              (push `(,name (one-more-re-nightmare.vector-primops:v-load
+                             vector
+                             (the fixnum (+ ,n position))))
+                    loads)
+              (push test tests))))
+         (incf n))
         ((list :tags tags)
          (push `(let ((position (the fixnum (+ ,n position))))
                   ,@(setf-from-assignments tags))
