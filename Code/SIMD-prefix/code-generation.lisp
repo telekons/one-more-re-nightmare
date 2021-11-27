@@ -52,12 +52,12 @@
              (test
               (push `(,name (one-more-re-nightmare.vector-primops:v-load
                              vector
-                             (the fixnum (+ ,n position))))
+                             (the fixnum (+ ,n start))))
                     loads)
               (push test tests))))
          (incf n))
         ((list :tags tags)
-         (push `(let ((position (the fixnum (+ ,n position))))
+         (push `(let ((position (the fixnum (+ ,n start))))
                   ,@(setf-from-assignments tags))
                assignments))))
     (values
