@@ -17,15 +17,13 @@
   ((list* 'or things)
    `(one-more-re-nightmare.vector-primops:v-or
      ,@(mapcar #'translate-scalar-code things)))
-  ((list* 'and things)
-   `(one-more-re-nightmare.vector-primops:v-and
-     ,@(mapcar #'translate-scalar-code things)))
   ;; Ditto for = really.
   ((list '= value variable)
    `(one-more-re-nightmare.vector-primops:v32=
      ,(find-broadcast value) ,variable))
   ;; Generating good code for <= is tricky though. Whoever designed
-  ;; SSE2 and AVX2 decided that just having = and > were good enough.
+  ;; SSE2 and AVX2 decided that just having = and > were good enough,
+  ;; so we need an efficient implementation of ≤ from those.
   ((list '<= 0 value high)
    ;; No lower bounds here. Note that X ≤ N ⇔ N + 1 > X
    `(one-more-re-nightmare.vector-primops:v32> ,(find-broadcast (1+ high)) ,value))
@@ -37,3 +35,29 @@
 
 (defun test-from-isum (variable isum)
   (translate-scalar-code (make-test-form isum variable '<= '=)))
+
+(defun code-from-prefix (prefix)
+  (let ((tests '())
+        (loads '())
+        (assignments '())
+        (n 0))
+    (dolist (part prefix)
+      (trivia:ematch part
+        ((list :literal isum)
+         (let ((name (make-symbol (format nil "LOAD-~d" n))))
+           (push `(,name (one-more-re-nightmare.vector-primops:v-load
+                          vector
+                          (the fixnum (+ ,n position))))
+                 loads)
+           (push (test-from-isum name isum) tests)
+           (incf n)))
+        ((list :tags tags)
+         (push `(let ((position (the fixnum (+ ,n position))))
+                  ,@(setf-from-assignments tags))
+               assignments))))
+    (values
+     (reduce (lambda (a b) `(one-more-re-nightmare.vector-primops:v-and ,a ,b))
+             tests)
+     loads
+     `(progn ,@(reverse assignments))
+     n)))
