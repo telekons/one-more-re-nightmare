@@ -57,7 +57,7 @@
               (push test tests))))
          (incf n))
         ((list :tags tags)
-         (push `(let ((position (the fixnum (+ ,n start))))
+         (push `(let ((position (the fixnum (+ ,n position))))
                   ,@(setf-from-assignments tags))
                assignments))))
     (values

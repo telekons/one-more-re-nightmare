@@ -27,10 +27,11 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
                                  one-more-re-nightmare.vector-primops:+v-length+
                                  start))
                   end)
+          (setf position start)
           (go ,(find-state-name (first states) :bounds-check)))
         ;; Now perform the SIMD test.
         (let* (,@loads
-               (test-results ,test))
+               (test-results (one-more-re-nightmare.vector-primops:v-movemask ,test)))
           (unless (zerop test-results)
             ;; Found a match!
             (setf position (+ start (one-more-re-nightmare.vector-primops:find-first-set test-results)))
@@ -47,6 +48,8 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
                         ;; assignments, as PREFIX would strip them
                         ;; off.
                         ,@(setf-from-assignments effects)
+                        (setf start (max (1+ start)
+                                         ,(find-in-map 'end (state-exit-map (second states)))))
                         (win ,@(win-locations
                                 (loop for (variable replica nil) in effects
                                       collect (list variable replica))))))
@@ -64,3 +67,14 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
                        variables))
                *broadcasts*)
       (values variables declarations body))))
+
+;; Surely we don't need this macro. Come on.
+(defmethod macros-for-strategy append ((strategy simd-prefix))
+  '((restart ()
+     '(go start))))
+
+(defun make-default-strategy (layout expression)
+  (if (and (> (length (prefix expression)) 1)
+           (equal (layout-array-type layout) '(simple-array character 1)))
+      (make-instance (dynamic-mixins:mix 'simd-prefix 'call-continuation))
+      (make-instance (dynamic-mixins:mix 'scan-everything 'call-continuation))))

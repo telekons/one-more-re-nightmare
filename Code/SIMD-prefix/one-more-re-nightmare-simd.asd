@@ -3,4 +3,6 @@
   :serial t
   :components ((:file "package")
                (:file "prefix")
-               (:file "code-generation")))
+               (:file "code-generation")
+               (:file "strategy")
+               (:file "sbcl-x86-64")))

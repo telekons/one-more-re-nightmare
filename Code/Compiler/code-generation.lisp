@@ -36,11 +36,11 @@
 (defun compile-regular-expression (expression
                                    &key (layout *default-layout*)
                                         (strategy #'make-default-strategy))
-  (let ((*layout* layout)
-        (strategy (funcall strategy layout expression)))
-    (with-hash-consing-tables ()
-      (multiple-value-bind (expression groups)
-          (parse-regular-expression expression)
+  (with-hash-consing-tables ()
+    (multiple-value-bind (expression groups)
+        (parse-regular-expression expression)
+      (let ((*layout* layout)
+            (strategy (funcall strategy layout expression)))
         (values
          (with-naughty-compiler-switches ()
            (compile nil

@@ -67,6 +67,33 @@
 (one-more-re-nightmare::define-op
     one-more-re-nightmare.vector-primops:v32= (a b) vpcmpeqd)
 
+(defknown one-more-re-nightmare.vector-primops:v-broadcast
+    ((unsigned-byte 32))
+    (simd-pack-256 integer)
+    ;; Not constant folding, because loading a folded broadcast is
+    ;; slower than reproducing it again.
+    (flushable movable)
+  :overwrite-fndb-silently t)
+
+(one-more-re-nightmare::define-boring-vop
+    one-more-re-nightmare.vector-primops:v-broadcast
+    ((integer unsigned-num :scs (unsigned-reg)))
+    (result simd-pack-256-int :scs (int-avx2-reg))
+  (inst movq result integer)
+  (inst vpbroadcastd result result))
+
+(defknown one-more-re-nightmare.vector-primops:v-movemask
+    ((simd-pack-256 integer))
+    (unsigned-byte 8)
+    (flushable movable)
+  :overwrite-fndb-silently t)
+
+(one-more-re-nightmare::define-boring-vop
+    one-more-re-nightmare.vector-primops:v-movemask
+    ((pack simd-pack-256-int :scs (int-avx2-reg)))
+    (result unsigned-num :scs (unsigned-reg))
+  (inst vmovmskps result pack))
+
 (one-more-re-nightmare::define-boring-vop
     one-more-re-nightmare.vector-primops:v-load
     ((string simple-character-string :scs (descriptor-reg))
