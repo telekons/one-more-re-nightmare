@@ -1,11 +1,20 @@
 # one-more-re-nightmare
 
-one-more-re-nightmare is a regular expression engine that uses the technique
-presented in [Regular-expression derivatives revisited](https://www.ccs.neu.edu/home/turon/re-deriv.pdf)
-to interpret and compile regular expressions. And I mean *compile* regular
-expressions. To actual machine code (well, Common Lisp, it goes to machine 
-code if you use a Lisp implementation that generates machine code somehow.)
-It's probably quite fast.
+one-more-re-nightmare is a regular expression engine that uses the
+technique presented in [Regular-expression derivatives
+revisited](https://www.ccs.neu.edu/home/turon/re-deriv.pdf) to
+interpret and compile regular expressions. We use a few tricks to make
+matching quite fast:
+
+- We use a deterministic finite automaton to have O(n) runtime.
+- We run the Common Lisp compiler to generate machine code, rather
+  than interpreting a DFA or bytecode, or jumping through closures
+  (like CL-PPCRE does).
+- We generate specialised code for each array type, so everything is
+  inlined.
+- If you use the `one-more-re-nightmare-simd` system on SBCL 2.1.10 or
+  newer with AVX2, we even use vectorised scanning of constant
+  prefixes of regular expressions.
 
 Thanks to Gilbert Baumann for suggesting I use derivatives to compile
 regular expressions, and then for informing me of how to handle
@@ -87,9 +96,9 @@ high-level interface, so the initial cost may amortize well over many
 calls; and constant regular expression strings are compiled at
 compile-time, with no runtime overhead whatsoever.
 
-| engine           | SBCL      | Clozure CL |
-|------------------|-----------|------------|
-| o-m-r-n          | 0.57ms    | 2.93ms     |
-| compilation time | 4.65ms    | 3.76ms     |
-| cl-ppcre         | 22.8ms    | 45.3ms     |
-| break even after | 209kchars | 88.7kchars |
+| engine           | SBCL      | Clozure CL | SBCL with AVX2 |
+|------------------|-----------|------------|----------------|
+| o-m-r-n          | 0.57ms    | 2.93ms     | 0.18ms         |
+| compilation time | 4.65ms    | 3.76ms     | 6.82ms         |
+| cl-ppcre         | 22.8ms    | 45.3ms     | 22.8ms         |
+| break even after | 209kchars | 88.7kchars | 301.5kchars    |
