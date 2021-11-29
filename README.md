@@ -96,9 +96,9 @@ high-level interface, so the initial cost may amortize well over many
 calls; and constant regular expression strings are compiled at
 compile-time, with no runtime overhead whatsoever.
 
-| engine           | SBCL      | Clozure CL | SBCL with AVX2 |
-|------------------|-----------|------------|----------------|
-| o-m-r-n          | 0.57ms    | 2.93ms     | 0.18ms         |
-| compilation time | 4.65ms    | 3.76ms     | 6.82ms         |
-| cl-ppcre         | 22.8ms    | 45.3ms     | 22.8ms         |
-| break even after | 209kchars | 88.7kchars | 301.5kchars    |
+| engine           | SBCL      | Clozure CL | SBCL with AVX2 | ditto, SIMPLE-BASE-STRING |
+|------------------|-----------|------------|----------------|---------------------------|
+| o-m-r-n          | 0.57ms    | 2.93ms     | 0.18ms         | 55µs                      |
+| compilation time | 4.65ms    | 3.76ms     | 6.82ms         | 6.43ms                    |
+| cl-ppcre         | 22.8ms    | 45.3ms     | 22.8ms         | 21.6ms                    |
+| break even after | 209kchars | 88.7kchars | 301kchars      | 305kchars                 |
