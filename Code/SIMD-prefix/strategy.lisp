@@ -1,7 +1,7 @@
 (in-package :one-more-re-nightmare)
 
 (defclass simd-prefix (strategy)
-  ()
+  ((bits :initarg :bits :reader bits))
   (:documentation "Match a prefix of the string using SIMD operations before entering a DFA.
 A prefix P of some regular expression R is defined to be a sequence of literals such that P·S = R for some other suffix regular expression S."))
 
@@ -24,14 +24,17 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
       `(start
         ;; Don't try to read over the END we were given.
         (when (>= (the fixnum (+ ,jump-length
-                                 one-more-re-nightmare.vector-primops:+v-length+
+                                 ,(/ one-more-re-nightmare.vector-primops:+v-length+ *bits*)
                                  start))
                   end)
           (setf position start)
           (go ,(find-state-name (first states) :bounds-check)))
         ;; Now perform the SIMD test.
         (let* (,@loads
-               (test-results (one-more-re-nightmare.vector-primops:v-movemask ,test)))
+               (test-results (,(ecase *bits*
+                                 (32 'one-more-re-nightmare.vector-primops:v-movemask32)
+                                 (8 'one-more-re-nightmare.vector-primops:v-movemask8))
+                              ,test)))
           (unless (zerop test-results)
             ;; Found a match!
             (setf position (+ start (one-more-re-nightmare.vector-primops:find-first-set test-results)))
@@ -55,15 +58,16 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
                                       collect (list variable replica))))))
                    `(go ,(find-state-name (second states) :bounds-check)))))
           ;; No match, so just bump and try again.
-          (incf start one-more-re-nightmare.vector-primops:+v-length+)
+          (incf start ,(/ one-more-re-nightmare.vector-primops:+v-length+ *bits*))
           (go start))))))
 
 (defmethod make-prog-parts :around ((strategy simd-prefix) expression)
-  (let ((*broadcasts* (make-hash-table)))
+  (let ((*broadcasts* (make-hash-table))
+        (*bits* (bits strategy)))
     (multiple-value-bind (variables declarations body)
         (call-next-method)
       (maphash (lambda (value name)
-                 (push (list name `(one-more-re-nightmare.vector-primops:v-broadcast ,value))
+                 (push (list name `(one-more-re-nightmare.vector-primops:v-broadcast32 ,value))
                        variables))
                *broadcasts*)
       (values variables declarations body))))
@@ -74,7 +78,15 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
      '(go start))))
 
 (defun make-default-strategy (layout expression)
-  (if (and (> (length (prefix expression)) 1)
-           (equal (layout-array-type layout) '(simple-array character 1)))
-      (make-instance (dynamic-mixins:mix 'simd-prefix 'call-continuation))
-      (make-instance (dynamic-mixins:mix 'scan-everything 'call-continuation))))
+  (flet ((default ()
+           (make-instance (dynamic-mixins:mix 'scan-everything 'call-continuation))))
+    (if (<= (length (prefix expression)) 1)
+        (default)
+        (alexandria:switch ((layout-array-type layout) :test 'equal)
+          ('(simple-array character 1)
+           (make-instance (dynamic-mixins:mix 'simd-prefix 'call-continuation)
+                          :bits 32))
+          ('(simple-array base-char 1)
+           (make-instance (dynamic-mixins:mix 'simd-prefix 'call-continuation)
+                          :bits 8))
+          (otherwise (default))))))
