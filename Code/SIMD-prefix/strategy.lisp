@@ -31,10 +31,7 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
           (go ,(find-state-name (first states) :bounds-check)))
         ;; Now perform the SIMD test.
         (let* (,@loads
-               (test-results (,(ecase *bits*
-                                 (32 'one-more-re-nightmare.vector-primops:v-movemask32)
-                                 (8 'one-more-re-nightmare.vector-primops:v-movemask8))
-                              ,test)))
+               (test-results (,(find-op "MOVEMASK") ,test)))
           (unless (zerop test-results)
             ;; Found a match!
             (setf position (+ start (one-more-re-nightmare.vector-primops:find-first-set test-results)))
@@ -67,7 +64,7 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
     (multiple-value-bind (variables declarations body)
         (call-next-method)
       (maphash (lambda (value name)
-                 (push (list name `(one-more-re-nightmare.vector-primops:v-broadcast32 ,value))
+                 (push (list name `(,(find-op "BROADCAST") ,value))
                        variables))
                *broadcasts*)
       (values variables declarations body))))

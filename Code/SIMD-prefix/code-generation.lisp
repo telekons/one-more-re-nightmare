@@ -24,11 +24,7 @@
              (:always)
              (:never (error "This should never happen - the empty set has no prefix!"))
              (test
-              (push `(,name (,(ecase *bits*
-                                (32 'one-more-re-nightmare.vector-primops:v-load32)
-                                (8  'one-more-re-nightmare.vector-primops:v-load8))
-                             vector
-                             (the fixnum (+ ,n start))))
+              (push `(,name (,(find-op "LOAD") vector (the fixnum (+ ,n start))))
                     loads)
               (push test tests))))
          (incf n))

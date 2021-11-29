@@ -1,5 +1,10 @@
 (in-package :one-more-re-nightmare)
 
+(defun find-op (name)
+  (or (find-symbol (format nil "V-~a~d" name *bits*)
+                   ':one-more-re-nightmare.vector-primops)
+      (error "No primop named ~a" name)))
+
 ;; AVX2 is a pile of stink and only has instructions for signed
 ;; comparisons. So, in order to fake an unsigned comparison, we
 ;; subtract #x80 from everything.
