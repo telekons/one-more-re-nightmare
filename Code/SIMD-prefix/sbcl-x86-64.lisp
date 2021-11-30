@@ -47,24 +47,25 @@
   ;; Generating good code for <= is tricky though. Whoever designed
   ;; SSE2 and AVX2 decided that just having = and > were good enough,
   ;; so we need an efficient implementation of ≤ from those.
+  ((list '<= 0 value high)
+   ;; No lower bounds here. Note that X ≤ N ⇔ N + 1 > X
+   (ecase *bits*
+     (32 `(one-more-re-nightmare.vector-primops:v32> ,(find-broadcast (1+ high)) ,value))
+     (8 `(one-more-re-nightmare.vector-primops:v8> ,(find-8-bit-broadcast (1+ high)) ,value))))
   ((list '<= low value high)
+   ;; Similarly, N ≤ X ⇔ X > N - 1
    (ecase *bits*
      (32
-      (if (= low 0)
-          ;; No lower bounds here. Note that X ≤ N ⇔ N + 1 > X
-          `(one-more-re-nightmare.vector-primops:v32> ,(find-broadcast (1+ high)) ,value)
-          `(one-more-re-nightmare.vector-primops:v-and
-            ;; Similarly, N ≤ X ⇔ X > N - 1
-            (one-more-re-nightmare.vector-primops:v32> ,value ,(find-broadcast (1- low)))
-            (one-more-re-nightmare.vector-primops:v32> ,(find-broadcast (1+ high)) ,value))))
+      `(one-more-re-nightmare.vector-primops:v-and
+        ;; Similarly, N ≤ X ⇔ X > N - 1
+        (one-more-re-nightmare.vector-primops:v32> ,value ,(find-broadcast (1- low)))
+        (one-more-re-nightmare.vector-primops:v32> ,(find-broadcast (1+ high)) ,value)))
      (8
-      (if (= low #x80)
-          `(one-more-re-nightmare.vector-primops:v8> ,(find-8-bit-broadcast (1+ high)) ,value)
-          `(one-more-re-nightmare.vector-primops:v-and
-            (one-more-re-nightmare.vector-primops:v8> ,(swizzle-8-bits)
-                                                      ,(find-8-bit-broadcast (1- low)))
-            (one-more-re-nightmare.vector-primops:v8> ,(find-8-bit-broadcast (1+ high))
-                                                      ,(swizzle-8-bits))))))))
+      `(one-more-re-nightmare.vector-primops:v-and
+        (one-more-re-nightmare.vector-primops:v8> ,(swizzle-8-bits)
+                                                  ,(find-8-bit-broadcast (1- low)))
+        (one-more-re-nightmare.vector-primops:v8> ,(find-8-bit-broadcast (1+ high))
+                                                  ,(swizzle-8-bits)))))))
 
 (defmacro define-boring-vop (name args result &body generator)
   `(progn
