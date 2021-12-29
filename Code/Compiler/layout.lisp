@@ -6,6 +6,7 @@
   (ref 'aref)
   (from-number 'code-char)
   (to-number 'char-code)
+  (less '<)
   (less-or-equal '<=)
   (equal '=))
 

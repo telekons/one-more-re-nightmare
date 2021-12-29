@@ -119,13 +119,19 @@
           ,(find-state-name state :no-bounds-check)
           (let ((value (,(layout-to-number *layout*)
                         (,(layout-ref *layout*) vector position))))
-            (cond
-              ,@(loop for transition in (state-transitions state)
-                      collect `(,(make-test-form (transition-class transition)
-                                                 'value
-                                                 (layout-less-or-equal *layout*)
-                                                 (layout-equal *layout*))
-                                ,(transition-code state transition))))))))
+            ,(let ((labels (loop for nil in (state-transitions state)
+                                 for n from 0
+                                 collect (alexandria:format-symbol nil "TRANSITION-~d" n))))
+            `(tagbody
+                (isum-case value ,(layout-less *layout*)
+                  ,@(loop for transition in (state-transitions state)
+                          for label in labels
+                          collect `(,(transition-class transition)
+                                    (go ,label))))
+                ,@(loop for transition in (state-transitions state)
+                        for label in labels
+                        collect label
+                        collect (transition-code state transition))))))))
 
 (defun transition-code (previous-state transition)
   (let* ((next-state (transition-next-state transition))
