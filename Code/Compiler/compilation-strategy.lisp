@@ -53,7 +53,10 @@
         ;; here.
         ,@(loop for (nil variable) in variables
                 for n from 0
-                collect `(setf (svref result-vector ,n) (1- ,variable)))
+                collect `(setf (svref result-vector ,n)
+                               ,(if (symbolp variable)
+                                    `(1- ,variable)
+                                    variable)))
         (go win)))))
 
 (defmethod lambda-list ((strategy call-continuation))
