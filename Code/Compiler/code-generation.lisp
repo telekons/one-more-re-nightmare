@@ -110,15 +110,26 @@
                  ;; We hit EOF and this state is nullable, so
                  ;; succeed with what we got so far.
                  `(progn
-                    ,@(setf-from-assignments
-                       (keep-used-assignments
-                        nullable
-                        (effects (state-expression state))))
+                    ;; See below for commentary on why we have to
+                    ;; nudge register values around.
+                    (let ((position (1+ position)))
+                      ,@(setf-from-assignments
+                         (keep-used-assignments
+                          nullable
+                          (effects (state-expression state)))))
                     (setf start (max position (1+ start)))
                     (win ,@(win-locations (state-exit-map state))))))
           ,(find-state-name state :no-bounds-check)
           (let ((value (,(layout-to-number *layout*)
                         (,(layout-ref *layout*) vector position))))
+            ;; We assign early so that the ADD instruction doesn't
+            ;; force our Lisp compiler to create a new basic block,
+            ;; and can just JMP directly to the next state when no tag
+            ;; assignments are done. This means that every register is
+            ;; going to have a value that is 1 too high, but we can
+            ;; just subtract in the (infrequent) places we read
+            ;; registers.
+            (incf position)
             ,(let ((labels (loop for nil in (state-transitions state)
                                  for n from 0
                                  collect (alexandria:format-symbol nil "TRANSITION-~d" n))))
@@ -147,15 +158,19 @@
            `(progn
               ,@(setf-from-assignments
                  (transition-tags-to-set transition))
-              (setf start (max (1+ start) ,(find-in-map 'end (state-exit-map next-state))))
+              (setf start (max (1+ start)
+                               (1- ,(find-in-map 'end (state-exit-map next-state)))))
               (win ,@(win-locations (state-exit-map next-state))))))
       ((re-empty-p next-expression)
        `(progn
           ,@(setf-from-assignments
              (transition-tags-to-set transition))
-          (incf position)
-          ,@(setf-from-assignments
-             (tags next-expression))
+          ;; These assignments are evaluated as if we were at the
+          ;; empty state -- we basically inline the empty state
+          ;; because it is only a set of assignments and WIN.
+          (let ((position (1+ position)))
+            ,@(setf-from-assignments
+               (tags next-expression)))
           (setf start position)
           (win ,@(win-locations (state-exit-map next-state)))))
       (t
@@ -167,7 +182,6 @@
          `(progn
             ,@(setf-from-assignments
                (transition-tags-to-set transition))
-            (incf position)
             (go ,(find-state-name next-state entry-point))))))))
 
 (defun win-locations (exit-map)

@@ -49,9 +49,11 @@
 (defmethod macros-for-strategy append ((strategy call-continuation))
   '((win (&rest variables)
      `(progn
+        ;; We have to compensate for the DFA assigning tags 1 too late
+        ;; here.
         ,@(loop for (nil variable) in variables
                 for n from 0
-                collect `(setf (svref result-vector ,n) ,variable))
+                collect `(setf (svref result-vector ,n) (1- ,variable)))
         (go win)))))
 
 (defmethod lambda-list ((strategy call-continuation))
