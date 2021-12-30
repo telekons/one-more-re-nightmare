@@ -35,8 +35,12 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
           (unless (zerop test-results)
             ;; Found a match!
             (setf position (+ start (one-more-re-nightmare.vector-primops:find-first-set test-results)))
+            ;; We increment POSITION by 1 before assigning to act like
+            ;; the actual DFA, and then do the rest of the "jump"
+            ;; after assignments.
+            (incf position)
             ,assignments
-            (incf position ,jump-length)
+            (incf position ,(1- jump-length))
             ;; The same deal as in START-CODE for SCAN-EVERYTHING: we
             ;; "inline" succeeding states, so we might need to succeed
             ;; rather than go to another state.
@@ -47,9 +51,10 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
                         ;; Surely there wouldn't be any new
                         ;; assignments, as PREFIX would strip them
                         ;; off.
-                        ,@(setf-from-assignments effects)
+                        (let ((position (1+ position)))
+                          ,@(setf-from-assignments effects))
                         (setf start (max (1+ start)
-                                         ,(find-in-map 'end (state-exit-map (second states)))))
+                                         (1- ,(find-in-map 'end (state-exit-map (second states))))))
                         (win ,@(win-locations
                                 (loop for (variable replica nil) in effects
                                       collect (list variable replica))))))
