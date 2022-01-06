@@ -13,6 +13,7 @@
   (:documentation "The lambda list of the function to generate."))
 (defgeneric start-code (strategy states)
   (:documentation "Part of a TAGBODY body used to start running a DFA."))
+(defgeneric transition-code (strategy previous-state transition))
 (defgeneric declarations (strategy))
 
 (defclass scan-everything (strategy)

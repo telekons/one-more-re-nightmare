@@ -1,7 +1,10 @@
 (in-package :one-more-re-nightmare)
 
-(defclass simd-prefix (strategy)
-  ((bits :initarg :bits :reader bits))
+(defclass simd-info ()
+  ((bits :initarg :bits :reader bits)))
+
+(defclass simd-prefix (simd-info strategy)
+  ()
   (:documentation "Match a prefix of the string using SIMD operations before entering a DFA.
 A prefix P of some regular expression R is defined to be a sequence of literals such that P·S = R for some other suffix regular expression S."))
 
@@ -63,7 +66,7 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
           (incf start ,(/ one-more-re-nightmare.vector-primops:+v-length+ *bits*))
           (go start))))))
 
-(defmethod make-prog-parts :around ((strategy simd-prefix) expression)
+(defmethod make-prog-parts :around ((strategy simd-info) expression)
   (let ((*broadcasts* (make-hash-table))
         (*bits* (bits strategy)))
     (multiple-value-bind (variables declarations body)
@@ -80,15 +83,18 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
      '(go start))))
 
 (defun make-default-strategy (layout expression)
-  (flet ((default ()
-           (make-instance (dynamic-mixins:mix 'scan-everything 'call-continuation))))
-    (if (> (count :literal (prefix expression) :key #'first) 1)
-        (alexandria:switch ((layout-array-type layout) :test 'equal)
-          ('(simple-array character 1)
-           (make-instance (dynamic-mixins:mix 'simd-prefix 'call-continuation)
-                          :bits 32))
-          ('(simple-array base-char 1)
-           (make-instance (dynamic-mixins:mix 'simd-prefix 'call-continuation)
-                          :bits 8))
-          (otherwise (default)))
-        (default))))
+  (let ((bits
+          (alexandria:switch ((layout-array-type layout) :test 'equal)
+            ('(simple-array character 1) 32)
+            ('(simple-array base-char 1) 8)
+            (otherwise nil))))
+    (cond
+      ((and (> (count :literal (prefix expression) :key #'first) 1)
+            (not (null bits)))
+       (make-instance (dynamic-mixins:mix 'simd-loop 'simd-prefix 'call-continuation)
+                      :bits bits))
+      ((not (null bits))
+       (make-instance (dynamic-mixins:mix 'simd-loop 'scan-everything 'call-continuation)
+                      :bits bits))
+      (t
+       (make-instance (dynamic-mixins:mix 'scan-everything 'call-continuation))))))

@@ -5,4 +5,5 @@
                (:file "prefix")
                (:file "code-generation")
                (:file "prefix-strategy")
+               (:file "loop")
                (:file "sbcl-x86-64")))

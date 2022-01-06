@@ -76,7 +76,7 @@
            (states (make-dfa-from-expressions initial-expressions)))
       (compute-predecessor-lists states)
       (compute-minimum-lengths states)
-      (let* ((body (make-body-from-dfa states))
+      (let* ((body (make-body-from-dfa strategy states))
              (initial-states (loop for expression in initial-expressions
                                    collect (gethash expression states)))
              (start-code (start-code strategy initial-states))
@@ -89,7 +89,7 @@
          `((alexandria:array-index start position ,@variables))
          (append start-code body))))))
 
-(defun make-body-from-dfa (states)
+(defun make-body-from-dfa (strategy states)
   (loop for state being the hash-values of states
         for expression = (state-expression state)
         for nullable = (nullable expression)
@@ -142,9 +142,10 @@
                 ,@(loop for transition in (state-transitions state)
                         for label in labels
                         collect label
-                        collect (transition-code state transition))))))))
+                        collect (transition-code strategy state transition))))))))
 
-(defun transition-code (previous-state transition)
+(defmethod transition-code (strategy previous-state transition)
+  (declare (ignore strategy))
   (let* ((next-state (transition-next-state transition))
          (next-expression (state-expression next-state)))
     (cond
