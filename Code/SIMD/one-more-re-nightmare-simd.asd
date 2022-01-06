@@ -4,5 +4,5 @@
   :components ((:file "package")
                (:file "prefix")
                (:file "code-generation")
-               (:file "strategy")
+               (:file "prefix-strategy")
                (:file "sbcl-x86-64")))
