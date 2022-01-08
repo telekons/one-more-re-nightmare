@@ -113,10 +113,10 @@
                     ;; See below for commentary on why we have to
                     ;; nudge register values around.
                     (let ((position (1+ position)))
-                      ,@(setf-from-assignments
-                         (keep-used-assignments
-                          nullable
-                          (effects (state-expression state)))))
+                      ,(setf-from-assignments
+                        (keep-used-assignments
+                         nullable
+                         (effects (state-expression state)))))
                     (setf start (max position (1+ start)))
                     (win ,@(win-locations (state-exit-map state))))))
           ,(find-state-name state :no-bounds-check)
@@ -157,21 +157,21 @@
            ;; Similarly to hitting EOF, if this state is nullable then
            ;; we can succeed with what we got.
            `(progn
-              ,@(setf-from-assignments
-                 (transition-tags-to-set transition))
+              ,(setf-from-assignments
+                (transition-tags-to-set transition))
               (setf start (max (1+ start)
                                (1- ,(find-in-map 'end (state-exit-map next-state)))))
               (win ,@(win-locations (state-exit-map next-state))))))
       ((re-empty-p next-expression)
        `(progn
-          ,@(setf-from-assignments
-             (transition-tags-to-set transition))
+          ,(setf-from-assignments
+            (transition-tags-to-set transition))
           ;; These assignments are evaluated as if we were at the
           ;; empty state -- we basically inline the empty state
           ;; because it is only a set of assignments and WIN.
           (let ((position (1+ position)))
-            ,@(setf-from-assignments
-               (tags next-expression)))
+            ,(setf-from-assignments
+              (tags next-expression)))
           (setf start position)
           (win ,@(win-locations (state-exit-map next-state)))))
       (t
@@ -181,8 +181,8 @@
                    :no-bounds-check
                    :bounds-check)))
          `(progn
-            ,@(setf-from-assignments
-               (transition-tags-to-set transition))
+            ,(setf-from-assignments
+              (transition-tags-to-set transition))
             (go ,(find-state-name next-state entry-point))))))))
 
 (defun win-locations (exit-map)
@@ -194,12 +194,11 @@
           collect `(,variable-name 'nil)))
 
 (defun setf-from-assignments (assignments)
-  `((setf
-     ,@(loop for (variable replica source)
-               in assignments
-             unless (equal (list variable replica) source)
-               collect (find-variable-name (list variable replica))
-               and collect (find-variable-name source)))))
+  `(setf
+    ,@(loop for (target . source) in assignments
+            unless (equal target source)
+              collect (find-variable-name target)
+              and collect (find-variable-name source))))
 
 (defun find-in-map (variable-name map)
   (let ((variable (find variable-name map :key #'first)))
@@ -222,7 +221,7 @@
                ((= position end)
                 (return))
                (t
-                ,@(setf-from-assignments effects)
+                ,(setf-from-assignments effects)
                 (incf position)
                 (win ,@(win-locations
                         (loop for (variable replica nil) in effects

@@ -50,8 +50,8 @@
      (error 'no-match))
    ;; This happens to work nicely as we know that NULLABLE
    ;; will never re-order substitutions in TAG-SETs.
-   (loop for (v1 r1 s1) in set1
-         for (v2 r2 s2) in set2
+   (loop for ((v1 r1) . s1) in set1
+         for ((v2 r2) . s2) in set2
          do (unless (eql v1 v2)
               (error 'no-match))
             (assert-equivalent-sources s1 s2)

@@ -8,11 +8,11 @@
   ;; a variable we also read.
   (setf assignments
         (loop for assignment in assignments
-              for (v r s) = assignment
-              unless (equal (list v r) s)
+              for (target . source) = assignment
+              unless (equal target source)
                 collect assignment))
-  (null (intersection (mapcar #'third assignments)
-                      (loop for (v r nil) in assignments collect (list v r))
+  (null (intersection (mapcar #'car assignments)
+                      (mapcar #'cdr assignments)
                       :test #'equal)))
 
 (defmethod transition-code ((strategy simd-loop) previous-state transition)

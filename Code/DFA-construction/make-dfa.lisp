@@ -23,7 +23,7 @@
                            for ((v1 r1) . (v2 r2))
                              in (alexandria:hash-table-alist substitutions)
                            when (member (list v2 r2) used :test #'equal)
-                             collect (list v2 r2 (list v1 r1)))))))
+                             collect (cons (list v2 r2) (list v1 r1)))))))
     (loop with expression = (state-expression state)
           for other-state in states
           for other-expression = (state-expression other-state)
@@ -62,17 +62,17 @@
         (remaining-assignments assignments))
     (flet ((substitute-variable (variable replica source)
              (setf remaining-assignments
-                   (loop for (v r s) in remaining-assignments
+                   (loop for ((v r) . s) in remaining-assignments
                          ;; Rewrite {A <- B} C <- A to C <- B
                          if (equal s (list variable replica))
-                           collect (list v r source)
+                           collect (cons (list v r) source)
                          else
-                           collect (list v r s)))))
+                           collect (cons (list v r) s)))))
       (loop until (null remaining-assignments)
-            do (destructuring-bind (variable replica source)
+            do (destructuring-bind ((variable replica) . source)
                    (pop remaining-assignments)
                  (if (member (list variable replica) used-tags :test #'equal)
-                     (push (list variable replica source) result)
+                     (push (cons (list variable replica) source) result)
                      (substitute-variable variable replica source))))
       (reverse result))))
             
@@ -132,7 +132,7 @@
           (push state (gethash (remove-tags expression)
                                possibly-similar-states))
           (setf (state-exit-map state)
-                (mapcar #'third (tags (nullable expression)))))))
+                (mapcar #'cdr (tags (nullable expression)))))))
     states))
 
 (defun make-dfa-from-expression (expression)

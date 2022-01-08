@@ -29,9 +29,9 @@
   (make-instance (dynamic-mixins:mix 'scan-everything 'call-continuation)))
 
 (defun add-tags (expression)
-  (join (tag-set '((start 0 position)))
+  (join (tag-set '(((start 0) . position)))
         (join expression
-               (tag-set '((end 0 position))))))
+               (tag-set '(((end 0) . position))))))
 
 (defun make-search-machine (expression)
   ;; We add an ALPHA wrapper to store the last end point when we

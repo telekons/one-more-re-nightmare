@@ -30,7 +30,7 @@
          (incf n))
         ((list :tags tags)
          (push `(let ((position (the fixnum (+ ,n position))))
-                  ,@(setf-from-assignments tags))
+                  ,(setf-from-assignments tags))
                assignments))))
     (values
      (reduce (lambda (a b) `(one-more-re-nightmare.vector-primops:v-and ,a ,b))

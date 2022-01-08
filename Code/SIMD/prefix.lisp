@@ -32,6 +32,6 @@
             (join (tag-set
                    (loop for (type tags) in prefix
                          when (eql type :tags)
-                           append (loop for (v r nil) in tags
-                                        collect (list v r (list v r)))))
+                           append (loop for ((v r) . nil) in tags
+                                        collect (cons (list v r) (list v r)))))
                   suffix))))

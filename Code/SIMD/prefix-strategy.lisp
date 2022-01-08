@@ -55,7 +55,7 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
                         ;; assignments, as PREFIX would strip them
                         ;; off.
                         (let ((position (1+ position)))
-                          ,@(setf-from-assignments effects))
+                          ,(setf-from-assignments effects))
                         (setf start (max (1+ start)
                                          (1- ,(find-in-map 'end (state-exit-map (second states))))))
                         (win ,@(win-locations

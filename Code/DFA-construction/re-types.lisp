@@ -45,7 +45,7 @@
               (empty-string)))
   :printer ((tag-set s)
             (format stream "{~{~a ← ~a~^, ~}}"
-                    (loop for (variable replica source) in s
+                    (loop for ((variable replica) . source) in s
                           if (zerop replica)
                             collect variable
                           else
@@ -160,6 +160,6 @@
           :from-end t))
 
 (defun group (r n)
-  (join (tag-set `((,(1- (* 2 n)) 0 position)))
+  (join (tag-set `(((,(1- (* 2 n)) 0) . position)))
         (join r
-              (tag-set `((,(* 2 n) 0 position))))))
+              (tag-set `(((,(* 2 n) 0) . position))))))

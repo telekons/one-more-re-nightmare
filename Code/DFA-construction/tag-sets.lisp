@@ -7,28 +7,30 @@
 
 (defun gensym-position-assignments (set)
   "Replicate any assignments, turning T_n <- s for all s into T^r_n <- T_n for some arbitrary r"
-  (loop for (variable replica source) in set
+  (loop for (target . source) in set
+        for (variable nil) = target
         collect (cond
                   ((not *gensym-assignments?*)
-                   (list variable replica (list variable replica)))
+                   (cons target target))
                   (t
-                   (list variable (tag-gensym) (list variable replica))))))
+                   (cons (list variable (tag-gensym)) target)))))
 
 (defun unique-assignments (set)
   "Make assignments unique, turning T_n <- s for all s into T^r_n <- s"
-  (loop for (variable replica source) in set
-        collect (list variable (tag-gensym) source)))
+  (loop for ((variable nil) . source) in set
+        collect (cons (list variable (tag-gensym)) source)))
 
 (defun merge-tag-sets (set1 set2)
-  (append (loop for (variable replica source) in set1
-                unless (find variable set2 :key #'first)
-                  collect (list variable replica source))
+  (append (loop for assignment in set1
+                for (target . source) = assignment
+                unless (find (first target) set2 :key #'caar)
+                  collect assignment)
           set2))
 
 (defun used-tags (re)
   (with-slot-consing (cached-used-tags re)
     (trivia:match re
-      ((tag-set s) (mapcar #'third s))
+      ((tag-set s) (mapcar #'cdr s))
       ((or (either r s) (both r s) (join r s))
        (union (used-tags r) (used-tags s) :test #'equal))
       ((or (kleene r) (invert r))
@@ -53,8 +55,8 @@
 (defun keep-used-assignments (new-re assignments)
   (loop with used = (used-tags new-re)
         for assignment in assignments
-        for (variable replica nil) = assignment
-        when (member (list variable replica) used :test #'equal)
+        for (target . nil) = assignment
+        when (member target used :test #'equal)
           collect assignment))
 
 (defun new-tags (new-re old-re)
@@ -119,20 +121,3 @@
 (defun unique-tags (re)
   (let ((*allow-alpha* nil))
     (map-tags #'unique-assignments re)))
-
-(defun replace-replica-in-tags (variable new-replica old-replica set)
-  (loop for (this-variable this-replica source) in set
-        for lhs = (if (and (eql this-variable variable)
-                           (eql this-replica old-replica))
-                      (list this-variable new-replica)
-                      (list this-variable this-replica))
-        for rhs = (if (equal source (list variable old-replica))
-                      (list variable new-replica)
-                      source)
-        collect `(,@lhs ,rhs)))
-
-(defun replace-replica (variable new-replica old-replica r)
-  (let ((*allow-alpha* t))
-    (map-tags (lambda (set)
-                (replace-replica-in-tags variable new-replica old-replica set))
-              r)))
