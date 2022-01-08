@@ -22,7 +22,7 @@
 (defun %all-matches (code vector start end)
   (declare (alexandria:array-index start end))
   (assert (and (<= end (length vector))
-               (<= start end)))
+               (<= 0 start end)))
   (destructuring-bind (function groups) code
     ;; The code function will fill in values as needed. 
     (let ((match (make-array (match-vector-size groups))))
@@ -59,7 +59,9 @@
         `(%all-matches ,code ,vector ,start ,(if end-p end `(length ,vector))))))
 
 (defun subsequences (vector match-vector)
-  (declare (simple-vector match-vector))
+  (declare (simple-vector match-vector)
+           (vector vector)
+           (optimize (speed 3) (safety 0)))
   (let* ((sequences (floor (length match-vector) 2))
          (string-match-vector (make-array sequences)))
     (loop for n below sequences
@@ -95,7 +97,7 @@
 (defun %first-match (code vector start end)
   (declare (alexandria:array-index start end))
   (assert (and (<= end (length vector))
-               (<= start end)))
+               (<= 0 start end)))
   (destructuring-bind (function groups) code
     (let ((tag-vector (make-array (match-vector-size groups))))
       (funcall function vector start end tag-vector
@@ -134,3 +136,30 @@
         `(subsequences ,vector
                        (%first-match ,code ,vector ,start ,(if end-p end `(length ,vector)))))
       w))
+
+(defmacro do-matches (((&rest registers) regular-expression vector
+                       &key (start 0) (end nil))
+                      &body body)
+  (alexandria:with-gensyms (function groups match-vector)
+    (alexandria:once-only (start end)
+      (flet ((consume (code vector)
+               `(destructuring-bind (,function ,groups) ,code
+                  (when (null ,end)
+                    (setf ,end (length ,vector)))
+                  (assert (and (<= ,end (length ,vector))
+                               (<= 0 ,start ,end)))
+                  (let ((,match-vector (make-array (match-vector-size ,groups))))
+                    (funcall ,function ,vector ,start ,end ,match-vector
+                             (lambda ()
+                               (let ,(loop for register in registers
+                                           for n from 0
+                                           collect `(,register (svref ,match-vector ,n)))
+                                 (declare ((or null alexandria:array-index) ,@registers))
+                                 ,@body)))))))
+        (if (stringp regular-expression)
+            (with-code-for-vector (code vector regular-expression)
+              (consume code vector))
+            (alexandria:with-gensyms (code)
+              (alexandria:once-only (vector)
+                `(let ((code (find-code ,regular-expression (string-type-of ,vector))))
+                   ,(consume code vector)))))))))
