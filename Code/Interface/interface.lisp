@@ -39,6 +39,7 @@
 
 (defmacro with-code-for-vector ((code vector regular-expression) &body body)
   `(alexandria:once-only (,vector)
+     (lint-regular-expression ,regular-expression)
      (alexandria:with-gensyms (,code)
        `(let ((,,code
                 (cond

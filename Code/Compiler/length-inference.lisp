@@ -56,6 +56,10 @@
                    (recompute-predecessors-of state))))
       ;; Make sure we did visit all the states.
       (maphash (lambda (ex state)
-                 (assert (or (< (minimum-length state) most-positive-fixnum)
-                             (re-stopped-p ex))))
+                 (declare (ignore ex))
+                 ;; If any states are stuck at the top value, then set
+                 ;; them to zero, so we don't confuse the rest of the
+                 ;; compiler.
+                 (when (= (minimum-length state) *pointlessly-large-number*)
+                   (setf (minimum-length state) 0)))
                states))))

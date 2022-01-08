@@ -23,12 +23,9 @@
                              (:file "length-inference")
                              (:file "optimize-settings")
                              (:file "code-generation")))
-               #+(or)
-               (:module "Boyer-Moore-Horspool"
-                :components ((:file "prefix")
-                             (:file "boyer-moore-horspool")))
                (:module "Interface"
                 :components ((:file "syntax")
                              (:file "convert-to-bytes")
                              (:file "code-cache")
+                             (:file "lint")
                              (:file "interface")))))
