@@ -34,8 +34,8 @@
 (defun trim-assignments-for-show (assignments)
   (let ((new-assignments
           (loop for assignment in assignments
-                for (variable replica source) = assignment
-                unless (equal (list variable replica) source)
+                for (target . source) = assignment
+                unless (equal target source)
                   collect assignment)))
     (if (null new-assignments)
         ""

@@ -58,9 +58,7 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
                           ,(setf-from-assignments effects))
                         (setf start (max (1+ start)
                                          (1- ,(find-in-map 'end (state-exit-map (second states))))))
-                        (win ,@(win-locations
-                                (loop for (variable replica nil) in effects
-                                      collect (list variable replica))))))
+                        (win ,@(win-locations (mapcar #'car effects)))))
                    `(go ,(find-state-name (second states) :bounds-check)))))
           ;; No match, so just bump and try again.
           (incf start ,(/ one-more-re-nightmare.vector-primops:+v-length+ *bits*))

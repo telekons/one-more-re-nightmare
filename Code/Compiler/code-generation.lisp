@@ -223,9 +223,7 @@
                (t
                 ,(setf-from-assignments effects)
                 (incf position)
-                (win ,@(win-locations
-                        (loop for (variable replica nil) in effects
-                              collect (list variable replica)))))))))
+                (win ,@(win-locations (mapcar #'car effects))))))))
         (t
          `(start
            (setf position start)

@@ -51,12 +51,11 @@
   (let ((variables (make-hash-table :test 'equal))
         (position 0))
     (flet ((run-effects (effects)
-             (loop for (variable replica source) in effects
+             (loop for (target . source) in effects
                    for value = (if (eql source 'position)
                                    position
                                    (gethash source variables))
-                   do (setf (gethash (list variable replica) variables)
-                            value))))
+                   do (setf (gethash target variables) value))))
       (map 'nil
            (lambda (element)
              (let* ((new-re (derivative re (symbol-set (char-code element))))
