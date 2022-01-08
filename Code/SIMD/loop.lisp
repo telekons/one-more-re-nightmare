@@ -4,9 +4,16 @@
 
 (defun assignments-idempotent-p (assignments)
   "Are the assignments idempotent, i.e. would repeated applications of the assignments, interleaved with incrementing the position, be the same as applying the assignments once at the end?"
-  ;; TODO: Be much more clever about this. We can't form un-idempotent
-  ;; assignments unless we write a variable we also read.
-  (null assignments))
+  ;; We can't form un-idempotent assignments unless we end up writing
+  ;; a variable we also read.
+  (setf assignments
+        (loop for assignment in assignments
+              for (v r s) = assignment
+              unless (equal (list v r) s)
+                collect assignment))
+  (null (intersection (mapcar #'third assignments)
+                      (loop for (v r nil) in assignments collect (list v r))
+                      :test #'equal)))
 
 (defmethod transition-code ((strategy simd-loop) previous-state transition)
   (let* ((next-state (transition-next-state transition))
