@@ -5,15 +5,21 @@
 (defun assignments-idempotent-p (assignments)
   "Are the assignments idempotent, i.e. would repeated applications of the assignments, interleaved with incrementing the position, be the same as applying the assignments once at the end?"
   ;; We can't form un-idempotent assignments unless we end up writing
-  ;; a variable we also read.
-  (setf assignments
-        (loop for assignment in assignments
-              for (target . source) = assignment
-              unless (equal target source)
-                collect assignment))
-  (null (intersection (mapcar #'car assignments)
-                      (mapcar #'cdr assignments)
-                      :test #'equal)))
+  ;; a variable we also read. But apparently optimising loops that
+  ;; carry over variables, i.e. aren't for the start, makes
+  ;; performance worse. Weird.
+  #-one-more-re-nightmare::precise-aip
+  (null assignments)
+  #+one-more-re-nightmare::precise-aip
+  (progn
+    (setf assignments
+          (loop for assignment in assignments
+                for (target . source) = assignment
+                unless (equal target source)
+                  collect assignment))
+    (null (intersection (mapcar #'car assignments)
+                        (mapcar #'cdr assignments)
+                        :test #'equal))))
 
 (defmethod transition-code ((strategy simd-loop) previous-state transition)
   (let* ((next-state (transition-next-state transition))
