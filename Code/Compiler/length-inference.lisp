@@ -40,10 +40,10 @@
 ;;; length of each successor (the "confluence" function). We treat
 ;;; states that never reach an accepting state as having infinite
 ;;; minimum length, so our implementation has to handle some
-;;; additional cases:
+;;; additional cases that aren't integer arithmetic:
+;;;     X ≠ infinity ⇒ X < infinity 
 ;;;     min(infinity, X) = min(X, infinity) = X for all X
-;;; and
-;;;     infinity + 1 = infinity.
+;;;     infinity + 1 = infinity
 ;;; Minimum lengths are repeatedly propagated until we don't actually
 ;;; lower anything by propagation. Then we have a correct result.
 
