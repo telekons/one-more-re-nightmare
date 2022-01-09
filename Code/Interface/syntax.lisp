@@ -45,21 +45,24 @@ under-either | under-either
       (empty-set)
       (tag-set (unique-assignments (effects expression)))))
 
+(defun clear-registers (expression)
+  (join (tag-set
+         (loop for ((v nil) . nil) in (tags expression)
+               collect (cons (list v (tag-gensym)) 'nil)))
+        expression))
+
 (esrap:defrule kleene
     (and expression "*")
   (:destructure (expression star)
     (declare (ignore star))
     (either (empty-match expression)
-            (kleene (join (tag-set
-                           (loop for ((v nil) . nil) in (tags expression)
-                                 collect (cons (list v (tag-gensym)) 'nil)))
-                          expression)))))
+            (kleene (clear-registers expression)))))
 
 (esrap:defrule plus
     (and expression "+")
   (:destructure (expression plus)
     (declare (ignore plus))
-    (join expression (either (empty-match expression) (kleene expression)))))
+    (join expression (either (empty-match expression) (kleene (clear-registers expression))))))
 
 (esrap:defrule either
     (and under-either "|" (or either under-either))
@@ -92,7 +95,7 @@ under-either | under-either
     (and expression* "{" integer "}")
   (:destructure (e left count right)
     (declare (ignore left right))
-    (reduce #'join (make-array count :initial-element e)
+    (reduce #'join (make-array count :initial-element (clear-registers e))
             :key #'unique-tags)))
 
 (esrap:defrule character-range
