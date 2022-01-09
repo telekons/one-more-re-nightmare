@@ -10,6 +10,10 @@
   (loop for (target . source) in set
         for (variable nil) = target
         collect (cond
+                  ((eql source 'nil)
+                   (if *gensym-assignments?*
+                       (cons (list variable (tag-gensym)) 'nil)
+                       (cons target 'nil)))
                   ((not *gensym-assignments?*)
                    (cons target target))
                   (t

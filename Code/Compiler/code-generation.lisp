@@ -14,8 +14,8 @@
                  :reader variable-map)))
 
 (defun find-variable-name (variable)
-  (when (eq variable 'position)
-    (return-from find-variable-name 'position))
+  (when (member variable '(nil position))
+    (return-from find-variable-name variable))
   (let ((names (variable-names *compiler-state*)))
     (multiple-value-bind (name present?)
         (gethash variable names)
@@ -187,24 +187,27 @@
 
 (defun win-locations (exit-map)
   (loop for variable-name across (variable-map *compiler-state*)
-        for variable = (find variable-name exit-map :key #'first)
-        if (not (null variable))
-          collect `(,variable-name ,(find-variable-name variable))
+        for (variable . source) = (find variable-name exit-map :key #'caar)
+        if (and (not (null variable))
+                (not (eql source 'nil)))
+          collect `(,variable-name ,(find-variable-name source))
         else
           collect `(,variable-name 'nil)))
 
 (defun setf-from-assignments (assignments)
   `(setf
     ,@(loop for (target . source) in assignments
-            unless (equal target source)
+            ;; NIL sources are basically just a compile time thing.
+            unless (or (equal target source)
+                       (eql source 'nil))
               collect (find-variable-name target)
               and collect (find-variable-name source))))
 
 (defun find-in-map (variable-name map)
-  (let ((variable (find variable-name map :key #'first)))
+  (let ((variable (find variable-name map :key #'caar)))
     (if (null variable)
         (error "~s not in the map ~s" variable-name map)
-        (find-variable-name variable))))
+        (find-variable-name (cdr variable)))))
 
 (defmethod start-code ((strategy scan-everything) states)
   (destructuring-bind (state) states
@@ -223,7 +226,7 @@
                (t
                 ,(setf-from-assignments effects)
                 (incf position)
-                (win ,@(win-locations (mapcar #'car effects))))))))
+                (win ,@(win-locations effects)))))))
         (t
          `(start
            (setf position start)

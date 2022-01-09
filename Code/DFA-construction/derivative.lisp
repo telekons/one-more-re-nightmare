@@ -52,9 +52,10 @@
         (position 0))
     (flet ((run-effects (effects)
              (loop for (target . source) in effects
-                   for value = (if (eql source 'position)
-                                   position
-                                   (gethash source variables))
+                   for value = (case source
+                                 ((position) position)
+                                 ((nil) 'nil)
+                                 (otherwise (gethash source variables)))
                    do (setf (gethash target variables) value))))
       (map 'nil
            (lambda (element)
@@ -70,7 +71,7 @@
       (values re
               (trivia:match (nullable re)
                 ((tag-set s)
-                 (loop for (name nil source) in s
+                 (loop for ((name nil) . source) in s
                        collect (cons name (gethash source variables))))
                 ((empty-string) '())
                 ((empty-set) '()))

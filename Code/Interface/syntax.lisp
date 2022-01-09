@@ -50,7 +50,10 @@ under-either | under-either
   (:destructure (expression star)
     (declare (ignore star))
     (either (empty-match expression)
-            (kleene expression))))
+            (kleene (join (tag-set
+                           (loop for ((v nil) . nil) in (tags expression)
+                                 collect (cons (list v (tag-gensym)) 'nil)))
+                          expression)))))
 
 (esrap:defrule plus
     (and expression "+")

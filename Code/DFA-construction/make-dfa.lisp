@@ -132,7 +132,7 @@
           (push state (gethash (remove-tags expression)
                                possibly-similar-states))
           (setf (state-exit-map state)
-                (mapcar #'cdr (tags (nullable expression)))))))
+                (tags (nullable expression))))))
     states))
 
 (defun make-dfa-from-expression (expression)

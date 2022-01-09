@@ -52,11 +52,13 @@
                             collect (format nil "~a~a"
                                             variable
                                             (subscripts replica))
-                          collect (if (eql source 'position)
-                                      "P"
-                                      (format nil "~a~a"
-                                              (first source)
-                                              (subscripts (second source))))))))
+                          collect (case source
+                                    ((position) "P")
+                                    ((nil) "NIL")
+                                    (otherwise
+                                     (format nil "~a~a"
+                                             (first source)
+                                             (subscripts (second source)))))))))
 (define-rewrites (alpha expression history)
   :simplify (((alpha (empty-set) (empty-set)) (empty-set)))
   :printer ((alpha r n)

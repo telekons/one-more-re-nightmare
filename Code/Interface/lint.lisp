@@ -21,7 +21,7 @@
         (maphash (lambda (re state)
                    (unless (eq (nullable re) (empty-set))
                      (setf matching? t))
-                   (loop for (n nil) in (state-exit-map state)
+                   (loop for ((n nil) . nil) in (state-exit-map state)
                          ;; Group #1 uses tags #1 and #2 - we'll use
                          ;; #2 being written to test if #1 is alive.
                          for group-number = (floor (1- n) 2)

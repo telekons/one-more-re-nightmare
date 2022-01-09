@@ -8,8 +8,9 @@
   (when (equal from to)
     ;; Don't care for X ~ X
     (return-from assert-equivalent))
-  (when (and (eql from 'position) (eql to 'position))
-    ;; Don't care for POSITION ~ POSITION
+  (when (or (and (eql from 'position) (eql to 'position))
+            (and (eql from 'nil) (eql to 'nil)))
+    ;; Don't care for POSITION ~ POSITION or NIL ~ NIL
     (return-from assert-equivalent))
   (multiple-value-bind (old-to present?)
       (gethash from *environment*)
