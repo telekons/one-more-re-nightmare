@@ -72,6 +72,15 @@ The following expressions can be used:
 `R|S` also binds tighter than `R&S`, so `A|B&C|D` parses as 
 `(both (join A B) (join C D))`.
 
+While the syntax is admittedly wonky (but somewhat more like how
+regular expressions are presented in papers), one-more-re-nightmare
+makes its best effort to implement POSIX semantics for matching (as
+described in the specification for [how `regcomp`
+works](https://pubs.opengroup.org/onlinepubs/9699919799/functions/regexec.html)
+and [regular expression
+definitions](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap09.html)). Any
+behaviour contrary to POSIX is a bug.
+
 ## A lousy benchmark
 
 ```lisp

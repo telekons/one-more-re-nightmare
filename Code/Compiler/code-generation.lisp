@@ -134,7 +134,9 @@
                                  for n from 0
                                  collect (alexandria:format-symbol nil "TRANSITION-~d" n))))
             `(tagbody
-                (isum-case value ,(layout-less *layout*)
+                (isum-case value
+                    ,(layout-less *layout*)
+                    ,(layout-equal *layout*)
                   ,@(loop for transition in (state-transitions state)
                           for label in labels
                           collect `(,(transition-class transition)

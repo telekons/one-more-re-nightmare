@@ -142,7 +142,7 @@ resulting set iff
        (print-union isum)
        (write-string "]" stream)))))
 
-(defmacro isum-case (var less-than &body clauses)
+(defmacro isum-case (var less-than equal &body clauses)
   ;; A variation on the theme, actually this is of more general use, since
   ;; Common Lisp implementations lack a jump table based implementation of
   ;; CASE.
@@ -183,6 +183,10 @@ resulting set iff
                    `(progn ,@x)))
              (foo (xs default)
                (cond ((null xs) default)
+                     ;; Check for a singleton set.
+                     ((and (= 4 (length xs)))
+                      (= (1+ (first xs)) (third xs))
+                      (cons-if `(,equal ,var ,(first xs)) (second xs) (fourth xs)))
                      ((= 2 (length xs))
                       (cons-if `(,less-than ,var ,(first xs)) default (second xs)))
                      (t
