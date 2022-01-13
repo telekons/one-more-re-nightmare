@@ -149,6 +149,11 @@
   (alexandria:with-gensyms (function groups match-vector)
     (alexandria:once-only (start end)
       (flet ((consume (code vector &optional known-register-count)
+               (when (and (not (null known-register-count))
+                          (> (length registers) known-register-count))
+                 (error "This regular expression only produces ~r registers, but ~r registers are specified."
+                        (length registers)
+                        known-register-count))
                `(with-code ((,function ,groups) ,code)
                   (declare (ignorable ,groups))
                   (when (null ,end)
