@@ -151,7 +151,7 @@
       (flet ((consume (code vector &optional known-register-count)
                (when (and (not (null known-register-count))
                           (> (length registers) known-register-count))
-                 (error "This regular expression only produces ~r registers, but ~r variables were provided."
+                 (warn "This regular expression only produces ~r register~:p, but ~r variables were provided."
                         known-register-count
                         (length registers)))
                `(with-code ((,function ,groups) ,code)
@@ -163,9 +163,14 @@
                   (let ((,match-vector (make-array ,(if (null known-register-count)
                                                         `(match-vector-size ,groups)
                                                         known-register-count))))
-                    ,@(if (null known-register-count)
-                          '()
-                          `((declare (dynamic-extent ,match-vector))))
+                    ,(if (null known-register-count)
+                         `(assert (>= (length ,match-vector)
+                                      ,(length registers))
+                                  ()
+                                  "This regular expression only produces ~r register~:p, but ~r variables were provided."
+                                  (length ,match-vector)
+                                  ,(length registers))
+                         `(declare (dynamic-extent ,match-vector)))
                     (funcall ,function ,vector ,start ,end ,match-vector
                              (lambda ()
                                (let ,(loop for register in registers
@@ -182,5 +187,5 @@
                 (consume code vector (match-vector-size groups))))
             (alexandria:with-gensyms (code)
               (alexandria:once-only (vector)
-                `(let ((code (find-code ,regular-expression (string-type-of ,vector))))
+                `(let ((,code (find-code ,regular-expression (string-type-of ,vector))))
                    ,(consume code vector)))))))))
