@@ -42,27 +42,35 @@
   (%all-matches (find-code regular-expression (string-type-of vector))
                 vector start end))
 
-(defmacro with-code-for-vector ((code vector regular-expression) &body body)
-  `(alexandria:once-only (,vector)
-     (lint-regular-expression ,regular-expression)
-     (alexandria:with-gensyms (,code)
-       `(let ((,,code
-                (cond
-                  ,@(loop for string-type in *string-types*
-                          collect `((typep ,,vector ',string-type)
-                                    (load-time-value (find-code ,,regular-expression ',string-type))))
-                  (t (find-code ,,regular-expression (string-type-of ,,vector))))))
-          ,(progn ,@body)))))
+(defmacro with-code-for-vector ((code vector regular-expression bailout-form) &body body)
+  `(cond
+     ((stringp ,regular-expression)
+      (handler-case
+          (lint-regular-expression ,regular-expression)
+        (error (e)
+          (warn "Error while linting:~%~a" e)
+          ,bailout-form)
+        (:no-error (&rest values)
+          (declare (ignore values))
+          (alexandria:once-only (,vector)
+            (alexandria:with-gensyms (,code)
+              `(let ((,,code
+                       (cond
+                         ,@(loop for string-type in *string-types*
+                                 collect `((typep ,,vector ',string-type)
+                                           (load-time-value (find-code ,,regular-expression ',string-type))))
+                         (t (find-code ,,regular-expression (string-type-of ,,vector))))))
+                 ,(progn ,@body)))))))
+     (t
+      ,bailout-form)))
 
 (define-compiler-macro all-matches (&whole w
                                     regular-expression vector
                                     &key (start 0)
                                          (end nil end-p))
-  (if (not (stringp regular-expression))
-      w
-      ;; Grab code at load-time if possible.
-      (with-code-for-vector (code vector regular-expression)
-        `(%all-matches ,code ,vector ,start ,(if end-p end `(length ,vector))))))
+  ;; Grab code at load-time if possible.
+  (with-code-for-vector (code vector regular-expression w)
+    `(%all-matches ,code ,vector ,start ,(if end-p end `(length ,vector)))))
 
 (defun subsequences (vector match-vector)
   (declare (simple-vector match-vector)
@@ -92,12 +100,10 @@
                                           regular-expression vector
                                           &key (start 0)
                                                (end nil end-p))
-  (if (not (stringp regular-expression))
-      w
-      ;; Grab code at load-time if possible.
-      (with-code-for-vector (code vector regular-expression)
-        `(mapcar (lambda (match) (subsequences ,vector match))
-                 (%all-matches ,code ,vector ,start ,(if end-p end `(length ,vector)))))))
+  ;; Grab code at load-time if possible.
+  (with-code-for-vector (code vector regular-expression w)
+    `(mapcar (lambda (match) (subsequences ,vector match))
+             (%all-matches ,code ,vector ,start ,(if end-p end `(length ,vector))))))
 
 (declaim (inline %first-match))
 (defun %first-match (code vector start end)
@@ -120,10 +126,8 @@
 (define-compiler-macro first-match (&whole w
                                     regular-expression vector
                                     &key (start 0) (end nil end-p))
-  (if (stringp regular-expression)
-      (with-code-for-vector (code vector regular-expression)
-        `(%first-match ,code ,vector ,start ,(if end-p end `(length ,vector))))
-      w))
+  (with-code-for-vector (code vector regular-expression w)
+    `(%first-match ,code ,vector ,start ,(if end-p end `(length ,vector)))))
 
 (defun first-string-match (regular-expression vector
                            &key (start 0) (end (length vector)))
@@ -137,56 +141,54 @@
 (define-compiler-macro first-string-match (&whole w
                                            regular-expression vector
                                            &key (start 0) (end nil end-p))
-  (if (stringp regular-expression)
-      (with-code-for-vector (code vector regular-expression)
-        `(subsequences ,vector
-                       (%first-match ,code ,vector ,start ,(if end-p end `(length ,vector)))))
-      w))
+  (with-code-for-vector (code vector regular-expression w)
+    `(subsequences ,vector
+                   (%first-match ,code ,vector ,start ,(if end-p end `(length ,vector))))))
 
 (defmacro do-matches (((&rest registers) regular-expression vector
                        &key (start 0) (end nil))
                       &body body)
   (alexandria:with-gensyms (function groups match-vector)
     (alexandria:once-only (start end)
-      (flet ((consume (code vector &optional known-register-count)
-               (when (and (not (null known-register-count))
-                          (> (length registers) known-register-count))
-                 (warn "This regular expression only produces ~r register~:p, but ~r variables were provided."
-                        known-register-count
-                        (length registers))
-                 (setf known-register-count nil))
-               `(with-code ((,function ,groups) ,code)
-                  (declare (ignorable ,groups))
-                  (when (null ,end)
-                    (setf ,end (length ,vector)))
-                  (assert (and (<= ,end (length ,vector))
-                               (<= 0 ,start ,end)))
-                  (let ((,match-vector (make-array ,(if (null known-register-count)
-                                                        `(match-vector-size ,groups)
-                                                        known-register-count))))
-                    ,(if (null known-register-count)
-                         `(assert (>= (length ,match-vector)
-                                      ,(length registers))
-                                  ()
-                                  "This regular expression only produces ~r register~:p, but ~r variables were provided."
-                                  (length ,match-vector)
-                                  ,(length registers))
-                         `(declare (dynamic-extent ,match-vector)))
-                    (funcall ,function ,vector ,start ,end ,match-vector
-                             (lambda ()
-                               (let ,(loop for register in registers
-                                           for n from 0
-                                           collect `(,register (svref ,match-vector ,n)))
-                                 (declare ((or null alexandria:array-index) ,@registers))
-                                 ,@body)))))))
-        (if (stringp regular-expression)
-            (multiple-value-bind (re groups)
-                (with-hash-consing-tables ()
-                  (parse-regular-expression regular-expression))
-              (declare (ignore re))
-              (with-code-for-vector (code vector regular-expression)
-                (consume code vector (match-vector-size groups))))
-            (alexandria:with-gensyms (code)
-              (alexandria:once-only (vector)
-                `(let ((,code (find-code ,regular-expression (string-type-of ,vector))))
-                   ,(consume code vector)))))))))
+      (labels ((consume (code vector &optional known-register-count)
+                 (when (and (not (null known-register-count))
+                            (> (length registers) known-register-count))
+                   (warn "This regular expression only produces ~r register~:p, but ~r variables were provided."
+                         known-register-count
+                         (length registers))
+                   (setf known-register-count nil))
+                 `(with-code ((,function ,groups) ,code)
+                    (declare (ignorable ,groups))
+                    (when (null ,end)
+                      (setf ,end (length ,vector)))
+                    (assert (and (<= ,end (length ,vector))
+                                 (<= 0 ,start ,end)))
+                    (let ((,match-vector (make-array ,(if (null known-register-count)
+                                                          `(match-vector-size ,groups)
+                                                          known-register-count))))
+                      ,(if (null known-register-count)
+                           `(assert (>= (length ,match-vector)
+                                        ,(length registers))
+                                    ()
+                                    "This regular expression only produces ~r register~:p, but ~r variables were provided."
+                                    (length ,match-vector)
+                                    ,(length registers))
+                           `(declare (dynamic-extent ,match-vector)))
+                      (funcall ,function ,vector ,start ,end ,match-vector
+                               (lambda ()
+                                 (let ,(loop for register in registers
+                                             for n from 0
+                                             collect `(,register (svref ,match-vector ,n)))
+                                   (declare ((or null alexandria:array-index) ,@registers))
+                                   ,@body))))))
+               (fallback ()
+                 (alexandria:with-gensyms (code)
+                   (alexandria:once-only (vector)
+                     `(let ((,code (find-code ,regular-expression (string-type-of ,vector))))
+                        ,(consume code vector))))))
+        (with-code-for-vector (code vector regular-expression (fallback))
+          (multiple-value-bind (re groups)
+              (with-hash-consing-tables ()
+                (parse-regular-expression regular-expression))
+            (declare (ignore re))
+            (consume code vector (match-vector-size groups))))))))
