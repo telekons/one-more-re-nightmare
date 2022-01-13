@@ -26,7 +26,7 @@
       (setf (gethash (list (copy-seq regular-expression)
                            type-specifier)
                      *code-cache*)
-            (list function groups)))))
+            (cons function groups)))))
 
 (defun string-type-of (string)
   (loop for type in *string-types*

@@ -18,12 +18,17 @@
          ,@body
          (cdr ,list)))))
 
+(defmacro with-code (((function groups) code) &body body)
+  `(let ((,function (car ,code))
+         (,groups (cdr ,code)))
+     ,@body))
+
 (declaim (inline %all-matches))
 (defun %all-matches (code vector start end)
   (declare (alexandria:array-index start end))
   (assert (and (<= end (length vector))
                (<= 0 start end)))
-  (destructuring-bind (function groups) code
+  (with-code ((function groups) code)
     ;; The code function will fill in values as needed. 
     (let ((match (make-array (match-vector-size groups))))
       (collect (result)
@@ -99,7 +104,7 @@
   (declare (alexandria:array-index start end))
   (assert (and (<= end (length vector))
                (<= 0 start end)))
-  (destructuring-bind (function groups) code
+  (with-code ((function groups) code)
     (let ((tag-vector (make-array (match-vector-size groups))))
       (funcall function vector start end tag-vector
                (lambda ()
@@ -143,13 +148,19 @@
                       &body body)
   (alexandria:with-gensyms (function groups match-vector)
     (alexandria:once-only (start end)
-      (flet ((consume (code vector)
-               `(destructuring-bind (,function ,groups) ,code
+      (flet ((consume (code vector &optional known-register-count)
+               `(with-code ((,function ,groups) ,code)
+                  (declare (ignorable ,groups))
                   (when (null ,end)
                     (setf ,end (length ,vector)))
                   (assert (and (<= ,end (length ,vector))
                                (<= 0 ,start ,end)))
-                  (let ((,match-vector (make-array (match-vector-size ,groups))))
+                  (let ((,match-vector (make-array ,(if (null known-register-count)
+                                                        `(match-vector-size ,groups)
+                                                        known-register-count))))
+                    ,@(if (null known-register-count)
+                          '()
+                          `((declare (dynamic-extent ,match-vector))))
                     (funcall ,function ,vector ,start ,end ,match-vector
                              (lambda ()
                                (let ,(loop for register in registers
@@ -158,8 +169,12 @@
                                  (declare ((or null alexandria:array-index) ,@registers))
                                  ,@body)))))))
         (if (stringp regular-expression)
-            (with-code-for-vector (code vector regular-expression)
-              (consume code vector))
+            (multiple-value-bind (re groups)
+                (with-hash-consing-tables ()
+                  (parse-regular-expression regular-expression))
+              (declare (ignore re))
+              (with-code-for-vector (code vector regular-expression)
+                (consume code vector (match-vector-size groups))))
             (alexandria:with-gensyms (code)
               (alexandria:once-only (vector)
                 `(let ((code (find-code ,regular-expression (string-type-of ,vector))))
