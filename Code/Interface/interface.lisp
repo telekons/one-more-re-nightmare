@@ -153,7 +153,8 @@
                           (> (length registers) known-register-count))
                  (warn "This regular expression only produces ~r register~:p, but ~r variables were provided."
                         known-register-count
-                        (length registers)))
+                        (length registers))
+                 (setf known-register-count nil))
                `(with-code ((,function ,groups) ,code)
                   (declare (ignorable ,groups))
                   (when (null ,end)
