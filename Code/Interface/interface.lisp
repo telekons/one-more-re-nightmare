@@ -151,9 +151,9 @@
       (flet ((consume (code vector &optional known-register-count)
                (when (and (not (null known-register-count))
                           (> (length registers) known-register-count))
-                 (error "This regular expression only produces ~r registers, but ~r registers are specified."
-                        (length registers)
-                        known-register-count))
+                 (error "This regular expression only produces ~r registers, but ~r variables were provided."
+                        known-register-count
+                        (length registers)))
                `(with-code ((,function ,groups) ,code)
                   (declare (ignorable ,groups))
                   (when (null ,end)
