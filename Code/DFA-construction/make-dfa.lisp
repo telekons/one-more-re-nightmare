@@ -2,6 +2,7 @@
 
 (defstruct transition
   class
+  last-state
   next-state
   tags-to-set)
 
@@ -44,6 +45,7 @@
       ((null same-transition)
        (push (make-transition
               :class class
+              :last-state last-state
               :next-state next-state
               :tags-to-set tags-to-set)
              (state-transitions last-state)))
@@ -80,8 +82,7 @@
 (defun make-dfa-from-expressions (expressions)
   (let ((states (make-hash-table))
         (possibly-similar-states (make-hash-table))
-        (work-list expressions)
-        (*tag-gensym-counter* 0))
+        (work-list expressions))
     (flet ((find-state (expression)
              (multiple-value-bind (state present?)
                  (gethash expression states)

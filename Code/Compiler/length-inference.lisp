@@ -3,13 +3,15 @@
 (stealth-mixin:define-stealth-mixin length-inference-info ()
   state
   ((predecessors :accessor predecessors)
+   (incoming-transitions :accessor incoming-transitions)
    (minimum-length :accessor minimum-length)))
 
 (defun compute-predecessor-lists (states)
   ;; Clear predecessor lists first.
   (maphash (lambda (ex state)
              (declare (ignore ex))
-             (setf (predecessors state) '()))
+             (setf (predecessors state) '()
+                   (incoming-transitions state) '()))
            states)
   ;; For each transition, add the predecessor to the predecessor list
   ;; of the successor.
@@ -17,8 +19,8 @@
              (declare (ignore ex))
              (dolist (transition (state-transitions predecessor))
                (let ((successor (transition-next-state transition)))
-                 (unless (null successor)
-                   (push predecessor (predecessors successor))))))
+                 (push transition (incoming-transitions successor))
+                 (push predecessor (predecessors successor)))))
            states))
 
 ;;; The following function implements Kildall's algorithm for
