@@ -8,6 +8,7 @@
 
 (defclass state ()
   ((exit-map :initarg :exit-map :accessor state-exit-map)
+   (exit-effects :initarg :exit-effects :accessor state-exit-effects)
    (expression :initarg :expression :accessor state-expression)
    (transitions :initform '() :accessor state-transitions)))
 
@@ -133,7 +134,11 @@
           (push state (gethash (remove-tags expression)
                                possibly-similar-states))
           (setf (state-exit-map state)
-                (tags (nullable expression))))))
+                (tags (nullable expression))
+                (state-exit-effects state)
+                (keep-used-assignments
+                 (nullable expression)
+                 (effects expression))))))
     states))
 
 (defun make-dfa-from-expression (expression)

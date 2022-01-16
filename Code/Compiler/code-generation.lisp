@@ -114,9 +114,7 @@
                     ;; nudge register values around.
                     (let ((position (1+ position)))
                       ,(setf-from-assignments
-                        (keep-used-assignments
-                         nullable
-                         (effects (state-expression state)))))
+                        (state-exit-effects state)))
                     (setf start (max position (1+ start)))
                     (win ,@(win-locations (state-exit-map state))))))
           ,(find-state-name state :no-bounds-check)
@@ -220,15 +218,15 @@
          `(start (return)))
         ((re-empty-p expression)
          ;; Succeed for every character?
-         (let ((effects (effects expression)))
-           `(start
-             (cond
-               ((= position end)
-                (return))
-               (t
-                ,(setf-from-assignments effects)
-                (incf position)
-                (win ,@(win-locations effects)))))))
+         `(start
+           (cond
+             ((> position end)
+              (return))
+             (t
+              (let ((position (1+ position)))
+                ,(setf-from-assignments (state-exit-effects state)))
+              (incf position)
+              (win ,@(win-locations (state-exit-map state)))))))
         (t
          `(start
            (setf position start)
