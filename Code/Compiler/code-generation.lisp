@@ -223,9 +223,8 @@
              ((> position end)
               (return))
              (t
-              (let ((position (1+ position)))
-                ,(setf-from-assignments (state-exit-effects state)))
               (incf position)
+              ,(setf-from-assignments (state-exit-effects state))
               (win ,@(win-locations (state-exit-map state)))))))
         (t
          `(start
