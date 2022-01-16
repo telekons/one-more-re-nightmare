@@ -14,15 +14,16 @@
                  :reader variable-map)))
 
 (defun find-variable-name (variable)
-  (when (member variable '(nil position))
-    (return-from find-variable-name variable))
-  (let ((names (variable-names *compiler-state*)))
-    (multiple-value-bind (name present?)
-        (gethash variable names)
-      (if present?
-          name
-          (setf (gethash variable names)
-                (make-symbol (format nil "~{~a.~a~}" variable)))))))
+  (trivia:match variable
+    ((or 'position (list '- 'position _)) variable)
+    (_
+     (let ((names (variable-names *compiler-state*)))
+       (multiple-value-bind (name present?)
+           (gethash variable names)
+         (if present?
+             name
+             (setf (gethash variable names)
+                   (make-symbol (format nil "~{~a.~a~}" variable)))))))))
 
 (defun find-state-name (state &optional (entry-point :bounds-check))
   (let ((names (state-names *compiler-state*)))
@@ -76,6 +77,7 @@
            (states (make-dfa-from-expressions initial-expressions)))
       (compute-predecessor-lists states)
       (compute-minimum-lengths states)
+      (do-global-value-numbering initial-expressions states)
       (let* ((body (make-body-from-dfa strategy states))
              (initial-states (loop for expression in initial-expressions
                                    collect (gethash expression states)))
@@ -171,7 +173,7 @@
           ;; because it is only a set of assignments and WIN.
           (let ((position (1+ position)))
             ,(setf-from-assignments
-              (tags next-expression)))
+              (state-exit-effects next-state)))
           (setf start position)
           (win ,@(win-locations (state-exit-map next-state)))))
       (t
