@@ -43,7 +43,7 @@
             (strategy (funcall strategy layout expression)))
         (values
          (with-naughty-compiler-switches ()
-           (compile nil
+           (progn;compile nil
                     (%compile-regular-expression
                      expression
                      strategy

@@ -15,6 +15,7 @@
   (let ((work-list (list (gethash initial-state dfa)))
         (input-pools (make-hash-table))
         (output-pools (make-hash-table))
+        (exit-pools (make-hash-table))
         (*gvn-gensym-counter* 0))
     ;; Iterate until we reach a fixed point.
     (labels ((update-successors (state)
@@ -43,9 +44,12 @@
             (setf (gethash state input-pools) confluence)
             (dolist (transition (state-transitions state))
               (setf (gethash transition output-pools)
-                    (gvn-transfer transition confluence)))
+                    (gvn-transfer (transition-tags-to-set transition)
+                                  confluence)))
+            (setf (gethash state exit-pools)
+                  (gvn-transfer (state-exit-effects state) confluence))
             (update-successors state)))))
-    (values input-pools output-pools)))
+    (values input-pools output-pools exit-pools)))
 
 (defun gvn-confluence (pool1 pool2)
   (let ((new-pool '()))
@@ -71,7 +75,7 @@
                   new-pool)))))
     new-pool))
 
-(defun gvn-transfer (transition pool)
+(defun gvn-transfer (assignments pool)
   (flet ((bump-set (set)
            (make-gvn-set
             :number (gvn-set-number set)
@@ -101,7 +105,7 @@
                  (push register (gvn-set-registers position-set)))
                (associate-registers (new existing)
                  (push new (gvn-set-registers (find-set existing)))))
-        (loop for (register . source) in (transition-tags-to-set transition)
+        (loop for (register . source) in assignments
               unless (equal register source)
                 do (remove-info register)
                    (if (eql source 'position)
