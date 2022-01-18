@@ -137,30 +137,54 @@
   t)
 
 (defun do-global-value-numbering (initial-states dfa)
-   (multiple-value-bind (in out exit)
-       (compute-global-value-numbers initial-states dfa)
-     (labels ((gvn-translate (register pool)
-                (if (member register '(nil position))
-                    register
-                    (let ((set (find-set-in-pool register pool)))
-                      (if (null (gvn-set-position-delta set))
-                          `(value ,(gvn-set-number set))
-                          `(- position ,(gvn-set-position-delta set))))))
-              (implicit-target-p (target)
-                (trivia:match target
-                  ((list '- 'position _) t)
-                  (_ nil)))
-              (translate (assignments in out)
-                (loop for (target . source) in assignments
-                      for target* = (gvn-translate target out)
-                      for source* = (gvn-translate source in)
-                      unless (or (implicit-target-p target*) (equal target* source*))
-                        collect (cons target* source*)))
-              (translate-exit-map (assignments exit)
-                (loop for (target . source) in assignments
-                      for source* = (gvn-translate source exit)
-                      collect (cons target source*)))
-              (add-gvn-translation (trans in out)))
+  "Replace each register in DFA with value numbers."
+  (multiple-value-bind (in out exit)
+      (compute-global-value-numbers initial-states dfa)
+    ;; After computing global value numbers, we need to "translate"
+    ;; every register to a value number (or an expression of the form
+    ;; (- POSITION N) for natural N).
+    (labels ((gvn-translate-set (set)
+               (if (null (gvn-set-position-delta set))
+                   `(value ,(gvn-set-number set))
+                   `(- position ,(gvn-set-position-delta set))))
+             (gvn-translate (register pool)
+               (if (member register '(nil position))
+                   register
+                   (gvn-translate-set (find-set-in-pool register pool))))
+             ;; We don't need to assign anything if our target value
+             ;; can be written as a (- POSITION N) form.
+             (implicit-target-p (target)
+               (trivia:match target
+                 ((list '- 'position _) t)
+                 (_ nil)))
+             ;; Note that OUT comes before IN, as we are working
+             ;; between the output of a predecessor state, and the
+             ;; input of a successor state.
+             (translate (assignments out in)
+               (loop for (target . source) in assignments
+                     for target* = (gvn-translate target out)
+                     for source* = (gvn-translate source in)
+                     unless (or (implicit-target-p target*) (equal target* source*))
+                       collect (cons target* source*)))
+             (translate-exit-map (assignments exit)
+               (loop for (target . source) in assignments
+                     for source* = (gvn-translate source exit)
+                     collect (cons target source*)))
+             (add-gvn-translation (trans out)
+               (loop with in = (gethash (transition-next-state trans) in)
+                     for to-set in in
+                     for witness = (first (gvn-set-registers to-set))
+                     for from-set = (find-set-in-pool witness out)
+                     when (and (null (gvn-set-position-delta to-set))
+                               (or (/= (gvn-set-number from-set)
+                                       (gvn-set-number to-set))
+                                   (not (null (gvn-set-position-delta from-set)))))
+                       collect (cons (gvn-translate-set to-set)
+                                     (gvn-translate-set from-set))
+                         into assignments
+                     finally (setf (transition-tags-to-set trans)
+                                   (append (transition-tags-to-set trans)
+                                           assignments)))))
        (maphash (lambda (expression state)
                   (declare (ignore expression))
                   (let ((in (gethash state in)))
@@ -168,13 +192,21 @@
                       (let ((out (gethash transition out)))
                         (setf (transition-tags-to-set transition)
                               (translate (transition-tags-to-set transition)
-                                         in out)))
-                      (add-gvn-translation transition in out))
+                                         out in))
+                        (add-gvn-translation transition out)))
                     (let ((exit (gethash state exit)))
                       (setf (state-exit-effects state)
                             (translate (state-exit-effects state)
-                                       in exit)
+                                       exit in)
                             (state-exit-map state)
                             (translate-exit-map (state-exit-map state)
                                                 exit)))))
                 dfa))))
+
+(defun test-gvn (expression)
+  (with-hash-consing-tables ()
+    (let* ((re (make-search-machine (parse-regular-expression expression)))
+           (dfa (make-dfa-from-expression re)))
+      (compute-predecessor-lists dfa)
+      (do-global-value-numbering (list re) dfa)
+      dfa)))

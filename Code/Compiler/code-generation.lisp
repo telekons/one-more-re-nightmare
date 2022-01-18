@@ -44,7 +44,7 @@
             (strategy (funcall strategy layout expression)))
         (values
          (with-naughty-compiler-switches ()
-           (progn;compile nil
+           (compile nil
                     (%compile-regular-expression
                      expression
                      strategy
@@ -78,6 +78,7 @@
       (compute-predecessor-lists states)
       (compute-minimum-lengths states)
       (do-global-value-numbering initial-expressions states)
+      (remove-dead-writes states)
       (let* ((body (make-body-from-dfa strategy states))
              (initial-states (loop for expression in initial-expressions
                                    collect (gethash expression states)))
@@ -161,8 +162,11 @@
            `(progn
               ,(setf-from-assignments
                 (transition-tags-to-set transition))
-              (setf start (max (1+ start)
-                               (1- ,(find-in-map 'end (state-exit-map next-state)))))
+              ,(let ((end (find-in-map 'end (state-exit-map next-state))))
+                 `(setf start (max (1+ start)
+                                   ,(if (symbolp end)
+                                        `(1- ,end)
+                                        end))))
               (win ,@(win-locations (state-exit-map next-state))))))
       ((re-empty-p next-expression)
        `(progn

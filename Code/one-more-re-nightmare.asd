@@ -21,6 +21,8 @@
                 :components ((:file "compilation-strategy")
                              (:file "layout")
                              (:file "length-inference")
+                             (:file "global-value-numbering")
+                             (:file "remove-dead-writes")
                              (:file "optimize-settings")
                              (:file "code-generation")))
                (:module "Interface"
