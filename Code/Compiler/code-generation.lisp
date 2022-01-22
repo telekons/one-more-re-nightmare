@@ -36,19 +36,20 @@
 (defun compile-regular-expression (expression
                                    &key (layout *default-layout*)
                                         (strategy #'make-default-strategy))
-  (with-hash-consing-tables ()
-    (multiple-value-bind (expression groups)
-        (parse-regular-expression expression)
-      (let ((*layout* layout)
-            (strategy (funcall strategy layout expression)))
-        (values
-         (with-naughty-compiler-switches ()
-           (compile nil
-                    (%compile-regular-expression
-                     expression
-                     strategy
-                     groups)))
-         groups)))))
+  (let ((*tag-gensym-counter* 0))
+    (with-hash-consing-tables ()
+      (multiple-value-bind (expression groups)
+          (parse-regular-expression expression)
+        (let ((*layout* layout)
+              (strategy (funcall strategy layout expression)))
+          (values
+           (with-naughty-compiler-switches ()
+             (compile nil
+                      (%compile-regular-expression
+                       expression
+                       strategy
+                       groups)))
+           groups))))))
 
 (defun variable-map-from-groups (groups)
   (coerce `(start end ,@(alexandria:iota (* groups 2) :start 1))
