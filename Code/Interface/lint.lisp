@@ -24,7 +24,7 @@
                    (loop for ((n nil) . nil) in (state-exit-map state)
                          ;; Group #1 uses tags #1 and #2 - we'll use
                          ;; #2 being written to test if #1 is alive.
-                         for group-number = (floor (1- n) 2)
+                         for group-number = (floor (1+ n) 2)
                          when (evenp n)
                            do (pushnew group-number matched-groups)))
                  dfa)
@@ -32,6 +32,6 @@
           ((not matching?)
            (warn 'expression-not-matchable))
           (t
-           (dotimes (n groups)
-             (unless (member n matched-groups)
-               (warn 'group-not-matchable :n (1+ n))))))))))
+           (loop for n from 1 to groups
+                 unless (member n matched-groups)
+                   do (warn 'group-not-matchable :n (1+ n)))))))))

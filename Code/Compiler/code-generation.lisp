@@ -94,16 +94,17 @@
   (loop for state being the hash-values of states
         for expression = (state-expression state)
         for nullable = (nullable expression)
-        ;; Yes, we still need to test would we continue scanning the
-        ;; string. 
-        for minimum-length = (max (minimum-length state) 1)
         ;; We "inline" these states into transitions rather than
-        ;; emitting a GO form.
+        ;; emitting code for separate states, because they are simple
+        ;; enough.
         unless (or (re-stopped-p expression)
-                   (re-empty-p expression))
+                   (re-empty-p expression)
+                   (state-never-succeeds-p state))
           append
         `(,(find-state-name state :bounds-check)
-          (unless (<= (the alexandria:array-index (+ position ,minimum-length)) end)
+          (unless (<= (the alexandria:array-index
+                           (+ position ,(max (minimum-length state) 1)))
+                      end)
             (when (> position end)
               (return))
             ,(if (eq (empty-set) nullable)
@@ -150,7 +151,8 @@
   (let* ((next-state (transition-next-state transition))
          (next-expression (state-expression next-state)))
     (cond
-      ((re-stopped-p next-expression)
+      ((or (state-never-succeeds-p next-state)
+           (re-stopped-p next-expression))
        (if (eq (nullable (state-expression previous-state)) (empty-set))
            `(progn
               (setf start (1+ start))
@@ -168,8 +170,8 @@
           ,(setf-from-assignments
             (transition-tags-to-set transition))
           ;; These assignments are evaluated as if we were at the
-          ;; empty state -- we basically inline the empty state
-          ;; because it is only a set of assignments and WIN.
+          ;; empty state -- we inline the empty state because it is
+          ;; only a set of assignments and a call to WIN.
           (let ((position (1+ position)))
             ,(setf-from-assignments
               (tags next-expression)))
@@ -214,7 +216,7 @@
   (destructuring-bind (state) states
     (let ((expression (state-expression state)))
       (cond
-        ((eq expression (empty-set))
+        ((state-never-succeeds-p state)
          ;; Just return immediately if we're told to match nothing.
          `(start (return)))
         ((re-empty-p expression)

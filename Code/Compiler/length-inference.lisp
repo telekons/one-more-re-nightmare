@@ -87,13 +87,7 @@
                                  :initial-value :infinity))))
                  (when (lower-p minimum-successors-length (minimum-length state))
                    (setf (minimum-length state) minimum-successors-length)
-                   (recompute-predecessors-of state))))
-      ;; Make sure we did visit all the states.
-      (maphash (lambda (ex state)
-                 (declare (ignore ex))
-                 ;; If any states are stuck at the top value, then set
-                 ;; them to zero, so we don't confuse the rest of the
-                 ;; compiler.
-                 (when (eql (minimum-length state) :infinity)
-                   (setf (minimum-length state) 0)))
-               states))))
+                   (recompute-predecessors-of state)))))))
+
+(defun state-never-succeeds-p (state)
+  (eql (minimum-length state) :infinity))
