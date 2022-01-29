@@ -102,9 +102,9 @@
                    (state-never-succeeds-p state))
           append
         `(,(find-state-name state :bounds-check)
-          (unless (<= (the alexandria:array-index
-                           (+ position ,(max (minimum-length state) 1)))
-                      end)
+          (when (> (the alexandria:array-index
+                        (+ position ,(max (minimum-length state) 1)))
+                   end)
             (when (> position end)
               (return))
             ,(if (eq (empty-set) nullable)
@@ -120,6 +120,10 @@
                     (setf start (max position (1+ start)))
                     (win ,@(win-locations (state-exit-map state))))))
           ,(find-state-name state :no-bounds-check)
+          #+print-traces
+          (print (list position
+                       ,(prin1-to-string expression)
+                       ,(minimum-length state)))
           (let ((value (,(layout-to-number *layout*)
                         (,(layout-ref *layout*) vector position))))
             ;; We assign early so that the ADD instruction doesn't
@@ -179,8 +183,9 @@
           (win ,@(win-locations (state-exit-map next-state)))))
       (t
        (let ((entry-point
-               (if (< (minimum-length next-state)
-                      (minimum-length previous-state))
+               (if (and (< (minimum-length next-state)
+                           (minimum-length previous-state))
+                        (plusp (minimum-length next-state)))
                    :no-bounds-check
                    :bounds-check)))
          `(progn
