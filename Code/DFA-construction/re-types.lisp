@@ -132,7 +132,7 @@
   :simplify (((invert (invert r)) r)
              ((invert (literal set))
               (literal (set-inverse set)))
-             ((invert (empty-string)) (empty-set)))
+             ((invert (or (empty-string) (tag-set _))) (empty-set)))
   :printer ((invert r)
             (format stream "¬[~a]" r)))
 (define-rewrites (join r s)
