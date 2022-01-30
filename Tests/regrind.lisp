@@ -1,5 +1,7 @@
 (in-package :one-more-re-nightmare-tests)
 
+;;;; It's regrind time!
+
 (defvar *start*)
 (defvar *end*)
 
@@ -11,7 +13,7 @@
   (one-more-re-nightmare::make-layout
    :ref 'checked-string-ref))
 
-(defvar *remaining-depth* 3)
+(defvar *remaining-depth* 4)
 (defun random-re ()
   (macrolet ((terminal ()
                ;; A random element of [A-Z].

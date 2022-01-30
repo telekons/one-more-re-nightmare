@@ -52,3 +52,6 @@
     ;;  V   V
     "«««a*»|b»|b»+" #(0 2 1 2 1 2 nil nil)
     "«««a*»|b»|b»*" #(0 2 1 2 1 2 nil nil)))
+
+(defun run-tests ()
+  (parachute:test 'one-more-re-nightmare))

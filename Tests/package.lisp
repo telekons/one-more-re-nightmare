@@ -1,2 +1,3 @@
 (defpackage :one-more-re-nightmare-tests
-  (:use :cl))
+  (:use :cl)
+  (:export #:run-tests #:regrind))
