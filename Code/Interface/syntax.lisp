@@ -100,11 +100,23 @@ under-either | under-either
     (reduce #'join (make-array count :initial-element (clear-registers e))
             :key #'unique-tags)))
 
+(esrap:defrule character-range-range
+    (and character "-" character)
+  (:destructure (low dash high)
+    (declare (ignore dash))
+    (symbol-range (char-code low) (char-code high))))
+
+(esrap:defrule character-range-not
+    (and "¬" character)
+  (:destructure (bar character)
+    (declare (ignore bar))
+    (set-inverse (singleton-set (char-code character)))))
+
 (esrap:defrule character-range
-    (and "[" character "-" character "]")
-  (:destructure (left c1 dash c2 right)
-    (declare (ignore left dash right))
-    (literal (symbol-range (char-code c1) (1+ (char-code c2))))))
+    (and "[" (or character-range-inner character-range-not) "]")
+  (:destructure (left range right)
+    (declare (ignore left right))
+    (literal range)))
 
 (esrap:defrule expression*
     (or repeated character-range match-group parens invert universal-set literal))

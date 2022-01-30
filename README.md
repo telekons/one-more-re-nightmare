@@ -66,6 +66,7 @@ The following expressions can be used:
 |                    | «R»           |
 | r^n                | R{n}          |
 | a + b + ... z      | [a-z]         |
+| ∑ \\ a             | [¬a]          |
 
 
 `¬R` binds tighter than `R*`, so `¬R*` parses as `(kleene (invert R))`.
