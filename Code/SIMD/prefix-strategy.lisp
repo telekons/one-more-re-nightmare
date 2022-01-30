@@ -17,8 +17,11 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
 
 (defmethod start-code ((strategy simd-prefix) states)
   ;; Note that, by definition, having a prefix implies that the RE
-  ;; can't produce only zero length matches, and it cannot match
-  ;; nothing. Thus we don't have to worry about those cases.
+  ;; can't produce only zero length matches. Thus we don't have to
+  ;; worry about that case.
+  (when (eql (minimum-length (first states)) :infinity)
+    ;; This can't actually match anything, so return immediately. 
+    (return-from start-code `(start (return))))
   (multiple-value-bind (prefix suffix)
       (prefix (state-expression (first states)))
     (declare (ignore suffix))
