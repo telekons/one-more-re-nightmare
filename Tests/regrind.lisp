@@ -47,9 +47,14 @@
                (let ((re (random-re))
                      (haystack (random-haystack)))
                  (multiple-value-bind (code groups)
-                     (one-more-re-nightmare:compile-regular-expression
-                      re
-                      :layout *layout*)
+                     (handler-case
+                         (one-more-re-nightmare:compile-regular-expression
+                          re
+                          :layout *layout*)
+                       (error (e)
+                         (format t "~&Compiling ~s fails with:~&~a" re e)
+                         (setf success nil)
+                         (return)))
                    (let ((result (make-array (one-more-re-nightmare::match-vector-size groups)))
                          (*start* 0)
                          (*end* (length haystack)))

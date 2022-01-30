@@ -41,9 +41,11 @@ under-either | under-either
         (group expressions group-number)))))
 
 (defun empty-match (expression)
-  (if (eq (empty-set) (nullable expression))
-      (empty-set)
-      (tag-set (unique-assignments (effects expression)))))
+  (trivia:ematch (nullable expression)
+    ((empty-set) (empty-set))
+    ((empty-string) (empty-string))
+    ((tag-set s) (tag-set (loop for (s . nil) in (unique-assignments s)
+                                collect (cons s 'position))))))
 
 (defun clear-registers (expression)
   (join (tag-set

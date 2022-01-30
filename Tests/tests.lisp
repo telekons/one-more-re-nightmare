@@ -45,13 +45,18 @@
     "«a|aa»+" #(0 6 4 6))
   (first-match "aaaaaaaa"
     "«a|aa»+" #(0 8 6 8))
-  ;; Per https://github.com/haskell-hvr/regex-tdfa/issues/2
+  ;; Per <https://github.com/haskell-hvr/regex-tdfa/issues/2>
   (first-match "ab"
     ;; We only should match here:
     ;;  |   |
     ;;  V   V
     "«««a*»|b»|b»+" #(0 2 1 2 1 2 nil nil)
-    "«««a*»|b»|b»*" #(0 2 1 2 1 2 nil nil)))
+    "«««a*»|b»|b»*" #(0 2 1 2 1 2 nil nil))
+  ;; Per <https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap09.html>:
+  ;; "For this purpose, a null string shall be considered to be longer
+  ;; than no match at all."
+  (first-match ""
+    "«a*»*" #(0 0 0 0)))
 
 (defun run-tests ()
   (parachute:test 'one-more-re-nightmare))

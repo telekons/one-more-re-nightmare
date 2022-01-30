@@ -72,6 +72,7 @@
               (trivia:match (nullable re)
                 ((tag-set s)
                  (loop for ((name nil) . source) in s
+                       unless (null (gethash source variables))
                        collect (cons name (gethash source variables))))
                 ((empty-string) '())
                 ((empty-set) '()))
