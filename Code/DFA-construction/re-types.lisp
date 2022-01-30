@@ -134,8 +134,6 @@
               (if (has-tags-p s)
                   (invert (remove-tags s))
                   (trivia.next:next)))
-             ((invert (literal set))
-              (literal (set-inverse set)))
              ((invert (or (empty-string) (tag-set _))) (empty-set)))
   :printer ((invert r)
             (format stream "¬[~a]" r)))
