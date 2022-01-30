@@ -1,3 +1,5 @@
+(in-package :one-more-re-nightmare-tests)
+
 (defvar *start*)
 (defvar *end*)
 
@@ -9,7 +11,7 @@
   (one-more-re-nightmare::make-layout
    :ref 'checked-string-ref))
 
-(defvar *remaining-depth* 2)
+(defvar *remaining-depth* 3)
 (defun random-re ()
   (macrolet ((terminal ()
                ;; A random element of [A-Z].
@@ -36,23 +38,31 @@
       (setf (char haystack i) (code-char (+ 65 (random 26)))))
     haystack))
 
-(defun regrind ()
-  (loop
-    (let ((re (random-re))
-          (haystack (random-haystack)))
-      (multiple-value-bind (code groups)
-          (one-more-re-nightmare:compile-regular-expression
-           re
-           :layout *layout*)
-        (let ((result (make-array (one-more-re-nightmare::match-vector-size groups)))
-              (*start* 0)
-              (*end* (length haystack)))
-          (handler-case
-              (funcall code haystack 0 (length haystack) result
-                       (constantly nil))
-            (error (e)
-              (format t "~&Matching ~s on the haystack ~s fails with:~&~a" re haystack e)
-              (return))
-            (:no-error (&rest stuff)
-              (declare (ignore stuff))
-              (write-char #\.))))))))
+(defun regrind (n &key (threads 4))
+  (let ((success t))
+    (flet ((work ()
+             (dotimes (i (floor n threads))
+               (let ((re (random-re))
+                     (haystack (random-haystack)))
+                 (multiple-value-bind (code groups)
+                     (one-more-re-nightmare:compile-regular-expression
+                      re
+                      :layout *layout*)
+                   (let ((result (make-array (one-more-re-nightmare::match-vector-size groups)))
+                         (*start* 0)
+                         (*end* (length haystack)))
+                     (handler-case
+                         (funcall code haystack 0 (length haystack) result
+                                  (constantly nil))
+                       (error (e)
+                         (format t "~&Matching ~s on the haystack ~s fails with:~&~a" re haystack e)
+                         (setf success nil))
+                       (:no-error (&rest stuff)
+                         (declare (ignore stuff))
+                         (when (zerop (mod i 100))
+                           (write-char #\.))))))))))
+      (mapc #'bt:join-thread
+            (loop repeat threads
+                  collect (bt:make-thread #'work
+                                          :name "It's regrind time!")))
+      success)))
