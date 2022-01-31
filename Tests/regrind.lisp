@@ -40,36 +40,30 @@
       (setf (char haystack i) (code-char (+ 65 (random 26)))))
     haystack))
 
-(defun regrind (n &key (threads 4))
+(defun regrind (n &key (depth 4))
   (let ((success t))
-    (flet ((work ()
-             (dotimes (i (floor n threads))
-               (let ((re (random-re))
-                     (haystack (random-haystack)))
-                 (multiple-value-bind (code groups)
-                     (handler-case
-                         (one-more-re-nightmare:compile-regular-expression
-                          re
-                          :layout *layout*)
-                       (error (e)
-                         (format t "~&Compiling ~s fails with:~&~a" re e)
-                         (setf success nil)
-                         (return)))
-                   (let ((result (make-array (one-more-re-nightmare::match-vector-size groups)))
-                         (*start* 0)
-                         (*end* (length haystack)))
-                     (handler-case
-                         (funcall code haystack 0 (length haystack) result
-                                  (constantly nil))
-                       (error (e)
-                         (format t "~&Matching ~s on the haystack ~s fails with:~&~a" re haystack e)
-                         (setf success nil))
-                       (:no-error (&rest stuff)
-                         (declare (ignore stuff))
-                         (when (zerop (mod i 100))
-                           (write-char #\.))))))))))
-      (mapc #'bt:join-thread
-            (loop repeat threads
-                  collect (bt:make-thread #'work
-                                          :name "It's regrind time!")))
-      success)))
+    (lparallel:pdotimes (i n success)
+      (let* ((*remaining-depth* depth)
+             (re (random-re))
+             (haystack (random-haystack)))
+        (handler-case
+            (one-more-re-nightmare:compile-regular-expression
+             re
+             :layout *layout*)
+          (error (e)
+            (format t "~&Compiling ~s fails with:~&~a" re e)
+            (setf success nil))
+          (:no-error (code groups)
+            (let ((result (make-array (one-more-re-nightmare::match-vector-size groups)))
+                  (*start* 0)
+                  (*end* (length haystack)))
+              (handler-case
+                  (funcall code haystack 0 (length haystack) result
+                           (constantly nil))
+                (error (e)
+                  (format t "~&Matching ~s on the haystack ~s fails with:~&~a" re haystack e)
+                  (setf success nil))
+                (:no-error (&rest stuff)
+                  (declare (ignore stuff))
+                  (when (zerop (mod i 100))
+                    (write-char #\.)))))))))))

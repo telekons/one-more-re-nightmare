@@ -33,6 +33,7 @@
           (setf (gethash (cons state entry-point) names)
                 (incf (next-state-name *compiler-state*)))))))
 
+(defvar *nowhere* (make-broadcast-stream))
 (defun compile-regular-expression (expression
                                    &key (layout *default-layout*)
                                         (strategy #'make-default-strategy))
@@ -41,6 +42,7 @@
       (multiple-value-bind (expression groups)
           (parse-regular-expression expression)
         (let ((*layout* layout)
+              (*error-output* *nowhere*)
               (strategy (funcall strategy layout expression)))
           (values
            (with-naughty-compiler-switches ()
