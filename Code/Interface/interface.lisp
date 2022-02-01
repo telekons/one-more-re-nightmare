@@ -145,9 +145,13 @@
     `(subsequences ,vector
                    (%first-match ,code ,vector ,start ,(if end-p end `(length ,vector))))))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (proclaim '(declaration of war)))
+
 (defmacro do-matches (((&rest registers) regular-expression vector
                        &key (start 0) (end nil))
                       &body body)
+  (declare (war on rustaceans))
   (alexandria:with-gensyms (function groups match-vector)
     (alexandria:once-only (start end)
       (labels ((consume (code vector &optional known-register-count)
