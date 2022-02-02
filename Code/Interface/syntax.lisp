@@ -113,7 +113,7 @@ under-either | under-either
     (set-inverse (singleton-set (char-code character)))))
 
 (esrap:defrule character-range
-    (and "[" (or character-range-inner character-range-not) "]")
+    (and "[" (or character-range-range character-range-not) "]")
   (:destructure (left range right)
     (declare (ignore left right))
     (literal range)))
