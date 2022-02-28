@@ -66,4 +66,5 @@
                 (:no-error (&rest stuff)
                   (declare (ignore stuff))
                   (when (zerop (mod i 100))
-                    (write-char #\.)))))))))))
+                    (write-char #\.)
+                    (finish-output)))))))))))

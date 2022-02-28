@@ -34,7 +34,13 @@
     "ab(c|)" '(#("ab") #("abc")))
   ;; Per HAKMEM item #176.
   (all-string-matches "banana"
-    "ana"    '(#("ana"))))
+    "ana"    '(#("ana")))
+  (all-string-matches "aaa"
+    "a+"     '(#("aaa"))
+    ;; Make sure we match the empty string at the end of the haystack..
+    ;; One program used at university would loop indefinitely, because
+    ;; it would not advance past the zero-length match at the end.
+    "a*"     '(#("aaa") #(""))))
 
 (parachute:define-test annoying-submatches
   :parent one-more-re-nightmare
@@ -47,9 +53,11 @@
     "«a|aa»+" #(0 8 6 8))
   ;; Per <https://github.com/haskell-hvr/regex-tdfa/issues/2>
   (first-match "ab"
+    ;; This involves clearing registers after each iteration of
+    ;; repetition due to * or +.
     ;; We only should match here:
-    ;;  |   |
-    ;;  V   V
+    ;;      |   |
+    ;;      V   V
     "«««a*»|b»|b»+" #(0 2 1 2 1 2 nil nil)
     "«««a*»|b»|b»*" #(0 2 1 2 1 2 nil nil))
   ;; Per <https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap09.html>:
