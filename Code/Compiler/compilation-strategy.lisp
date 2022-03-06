@@ -1,5 +1,8 @@
 (in-package :one-more-re-nightmare)
 
+(defvar *compiler-state*)
+(defvar *layout*)
+
 (defclass strategy ()
   ()
   (:documentation "A compilation strategy describes how potential matches should be searched for."))

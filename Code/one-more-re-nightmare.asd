@@ -18,8 +18,8 @@
                              (:file "tag-sets")
                              (:file "make-dfa")))
                (:module "Compiler"
-                :components ((:file "compilation-strategy")
-                             (:file "layout")
+                :components ((:file "layout")
+                             (:file "compilation-strategy")
                              (:file "length-inference")
                              (:file "optimize-settings")
                              (:file "code-generation")))

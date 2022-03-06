@@ -1,5 +1,6 @@
 (in-package :one-more-re-nightmare)
 
+#+(or)
 (trivia:defun-match string->byte-re (re)
   ((literal set)
    (etypecase set

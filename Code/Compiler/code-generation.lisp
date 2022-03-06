@@ -1,8 +1,5 @@
 (in-package :one-more-re-nightmare)
 
-(defvar *compiler-state*)
-(defvar *layout*)
-
 (defclass compiler-state ()
   ((variable-names :initform (make-hash-table :test 'equal)
                    :reader variable-names)
