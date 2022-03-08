@@ -1,4 +1,7 @@
 (asdf:defsystem :one-more-re-nightmare
+  :author "Hayley Patton"
+  :description "A regular expression compiler"
+  :license "BSD 2-clause"
   :depends-on (:trivia :alexandria :babel
                :esrap :trivial-indent
                :dynamic-mixins :stealth-mixin
