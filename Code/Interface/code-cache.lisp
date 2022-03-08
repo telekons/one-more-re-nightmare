@@ -11,6 +11,10 @@
                           '(character base-char)
                           '(1)))
 
+(defun match-vector-size (groups)
+  (declare ((unsigned-byte 32) groups))
+  (* 2 (1+ groups)))
+
 (defun find-code (regular-expression type-specifier)
   (bt:with-lock-held (*code-lock*)
     (multiple-value-bind (code present?)
@@ -26,7 +30,7 @@
       (setf (gethash (list (copy-seq regular-expression)
                            type-specifier)
                      *code-cache*)
-            (cons function groups)))))
+            (cons function (match-vector-size groups))))))
 
 (defun string-type-of (string)
   (loop for type in *string-types*
