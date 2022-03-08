@@ -55,7 +55,7 @@ The following expressions can be used:
 
 | Regular expression | String syntax |
 |--------------------|---------------|
-| ∑                  | ∑ or $        |
+| ∑                  | $             |
 | r*                 | R*            |
 | r + s              | R\|S          |
 | r r*               | R+            |

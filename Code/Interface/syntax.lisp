@@ -11,7 +11,7 @@
     char))
 
 (esrap:defrule special-character
-    (or "(" ")" "«" "»" "[" "]" "{" "}" "¬" "~" "|" "&" "*" "∑" "$" "+"))
+    (or "(" ")" "«" "»" "[" "]" "{" "}" "¬" "~" "|" "&" "*" "$" "+"))
 
 #|
 «expression*»
@@ -85,7 +85,7 @@ under-either | under-either
     (invert expression)))
 
 (esrap:defrule universal-set
-    (or "∑" "$")
+    "$"
   (:constant (universal-set)))
 
 (esrap:defrule integer
