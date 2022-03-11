@@ -43,11 +43,14 @@
               (strategy (funcall strategy layout expression)))
           (values
            (with-naughty-compiler-switches ()
-             (compile nil
-                      (%compile-regular-expression
-                       expression
-                       strategy
-                       groups)))
+             (let ((form (%compile-regular-expression
+                          expression
+                          strategy
+                          groups)))
+               #-(and sbcl interpret-re) (compile nil form)
+               #+(and sbcl interpret-re)
+               (let ((sb-ext:*evaluator-mode* :interpret))
+                 (eval form))))
            groups))))))
 
 (defun variable-map-from-groups (groups)
