@@ -31,6 +31,7 @@
                 (incf (next-state-name *compiler-state*)))))))
 
 (defvar *nowhere* (make-broadcast-stream))
+(defvar *make-interpreted-code* nil)
 (defun compile-regular-expression (expression
                                    &key (layout *default-layout*)
                                         (strategy #'make-default-strategy))
@@ -47,10 +48,13 @@
                           expression
                           strategy
                           groups)))
-               #-(and sbcl interpret-re) (compile nil form)
-               #+(and sbcl interpret-re)
-               (let ((sb-ext:*evaluator-mode* :interpret))
-                 (eval form))))
+               #-sbcl
+               (compile nil form)
+               #+sbcl
+               (if *make-interpreted-code*
+                   (let ((sb-ext:*evaluator-mode* :interpret))
+                     (eval form))
+                   (compile nil form))))
            groups))))))
 
 (defun variable-map-from-groups (groups)
