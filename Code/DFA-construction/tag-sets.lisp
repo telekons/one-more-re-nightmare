@@ -81,7 +81,7 @@
       ((both r s) (both (remove-tags r) (remove-tags s)))
       ((join r s) (join (remove-tags r) (remove-tags s)))
       ((kleene r) (kleene (remove-tags r)))
-      ((invert r) (kleene (remove-tags r)))
+      ((invert r) (invert (remove-tags r)))
       ((alpha r s)
        (either (remove-tags r)
                (if (eq s (empty-set))
