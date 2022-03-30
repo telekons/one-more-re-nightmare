@@ -5,8 +5,8 @@
   :depends-on (:one-more-re-nightmare)
   :serial t
   :components ((:file "package")
-               (:file "prefix")
                (:file "code-generation")
+               (:file "sbcl-x86-64")
+               (:file "prefix")
                (:file "prefix-strategy")
-               (:file "loop")
-               (:file "sbcl-x86-64")))
+               (:file "loop")))
