@@ -4,7 +4,16 @@
 (defvar *dfa*)
 (defvar *initial-state*)
 
-(defun print-dfa (dfa initial-state)
+(defun generate-dot-for-expression (expression)
+  (uiop:with-temporary-file (:pathname p :stream s :keep t :type "dot")
+    (with-hash-consing-tables ()
+      (let* ((initial-state
+               (make-search-machine (parse-regular-expression expression)))
+             (dfa (make-dfa-from-expression initial-state)))
+        (print-dfa dfa initial-state s)))
+    p))
+
+(defun print-dfa (dfa initial-state &optional (stream *standard-output*))
   (let ((*dfa* dfa)
         (*initial-state* (gethash initial-state dfa)))
     (cl-dot:print-graph
@@ -12,7 +21,8 @@
       'dfa
       (list (gethash initial-state dfa))
       '(:node (:fontname "Inconsolata" :shape :box)
-        :edge (:fontname "Inconsolata"))))))
+        :edge (:fontname "Inconsolata")))
+     :stream stream)))
 
 (defmethod cl-dot:graph-object-node ((graph (eql 'dfa)) (state (eql 'nothing)))
   (make-instance 'cl-dot:node
@@ -27,9 +37,8 @@
   (make-instance 'cl-dot:node
    :attributes (list
                 :label (list :left (format nil "~A~%" (state-expression state)))
-                :fontcolor (if (eq (empty-set) (nullable (state-expression state)))
-                               "black"
-                               "red"))))
+                :style (if (eq (empty-set) (nullable (state-expression state)))
+                           :solid :bold))))
 
 (defun trim-assignments-for-show (assignments)
   (let ((new-assignments
