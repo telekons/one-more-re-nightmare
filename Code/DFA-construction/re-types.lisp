@@ -19,11 +19,13 @@
 (defun empty-set ()
   (literal (symbol-set)))
 (defun universal-set ()
-  (literal (set-inverse (symbol-set))))
+  (kleene (literal (set-inverse (symbol-set)))))
 (trivia:defpattern empty-set ()
   (alexandria:with-gensyms (set)
     `(trivia:guard (literal ,set)
                    (set-null ,set))))
+(trivia:defpattern universal-set ()
+  `(kleene (literal ',+universal-set+)))
 
 (defvar *subscripts* "₀₁₂₃₄₅₆₇₈₉")
 (defun subscripts (number)
@@ -80,6 +82,10 @@
              ((either r (empty-set)) r)
              ((either (literal s1) (literal s2))
               (literal (set-union s1 s2)))
+             ((either r (universal-set))
+              (if (has-tags-p r)
+                  (trivia.next:next)    ; Preserve tags then
+                  (universal-set)))
              ((either (join (literal s1) p)
                       (join (literal s2) r))
               ;; Try to expose more prefixes.
@@ -134,6 +140,7 @@
               (if (has-tags-p s)
                   (invert (remove-tags s))
                   (trivia.next:next)))
+             ((invert (universal-set)) (empty-set))
              ((invert (or (empty-string) (tag-set _))) (empty-set)))
   :printer ((invert r)
             (format stream "¬[~a]" r)))

@@ -21,9 +21,8 @@ under-either | under-either
 |#
 
 (esrap:defrule literal
-    (* (or escaped-character (not special-character)))
-  (:destructure (&rest characters)
-    (text characters)))
+    (or escaped-character (not special-character))
+  (:lambda (character) (literal (symbol-set (char-code character)))))
 
 (esrap:defrule parens
     (and "(" expressions ")")
@@ -79,7 +78,7 @@ under-either | under-either
     (both e1 e2)))
 
 (esrap:defrule invert
-    (and (or "¬" "~") expression*)
+    (and (or "¬" "~") under-join)
   (:destructure (bar expression)
     (declare (ignore bar))
     (invert expression)))
@@ -94,7 +93,7 @@ under-either | under-either
     (parse-integer (format nil "~{~A~}" list))))
 
 (esrap:defrule repeated
-    (and expression* "{" integer "}")
+    (and under-join "{" integer "}")
   (:destructure (e left count right)
     (declare (ignore left right))
     (reduce #'join (make-array count :initial-element (clear-registers e))
@@ -118,11 +117,20 @@ under-either | under-either
     (declare (ignore left right))
     (literal range)))
 
-(esrap:defrule expression*
-    (or repeated character-range match-group parens invert universal-set literal))
+(esrap:defrule join
+    (and under-join under-join)
+  (:destructure (e1 e2) (join e1 e2)))
+
+(esrap:defrule empty-string
+    ""
+  (:lambda (x) (declare (ignore x)) (empty-string)))
+
+(esrap:defrule under-join
+    (or repeated character-range match-group parens
+        invert universal-set literal empty-string))
 
 (esrap:defrule under-either
-    (or plus kleene expression*))
+    (or plus kleene join under-join))
 
 (esrap:defrule under-both
     (or either under-either))
@@ -130,13 +138,9 @@ under-either | under-either
 (esrap:defrule expression
     (or both under-both))
 
-(esrap:defrule two-expressions
-    (and expression expressions)
-  (:destructure (e1 e2)
-    (join e1 e2)))
-
 (esrap:defrule expressions
-    (or two-expressions expression))
+    (and expression (or expressions empty-string))
+  (:destructure (e1 e2) (join e1 e2)))
 
 (defun parse-regular-expression (string)
   (let ((*next-group* 0))

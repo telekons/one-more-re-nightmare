@@ -45,7 +45,8 @@
       ((alpha r old-tags)
        (let* ((r* (derivative r set))
               (nullable (nullable r)))
-         (alpha r* (either nullable old-tags)))))))
+         (alpha r*
+                (either nullable old-tags)))))))
 
 (defun derivative* (re sequence)
   (let ((variables (make-hash-table :test 'equal))
@@ -60,7 +61,8 @@
       (map 'nil
            (lambda (element)
              (let* ((new-re (derivative re (symbol-set (char-code element))))
-                    (effects (effects re)))
+                    (effects (remove-if (lambda (x) (equal (car x) (cdr x)))
+                                        (effects re))))
                (format t "~&~a~&  ~:c ~a"
                        re element effects)
                (setf re new-re)

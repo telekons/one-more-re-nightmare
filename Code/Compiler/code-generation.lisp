@@ -31,7 +31,7 @@
                 (incf (next-state-name *compiler-state*)))))))
 
 (defvar *nowhere* (make-broadcast-stream))
-(defvar *make-interpreted-code* nil)
+(defvar *code-type* :compiled)
 (defun compile-regular-expression (expression
                                    &key (layout *default-layout*)
                                         (strategy #'make-default-strategy))
@@ -48,13 +48,15 @@
                           expression
                           strategy
                           groups)))
-               #-sbcl
-               (compile nil form)
-               #+sbcl
-               (if *make-interpreted-code*
-                   (let ((sb-ext:*evaluator-mode* :interpret))
-                     (eval form))
-                   (compile nil form))))
+               (ecase *code-type*
+                 #+sbcl
+                 (:interpreted
+                  (let ((sb-ext:*evaluator-mode* :interpret))
+                    (eval form)))
+                 (:compiled
+                  (compile nil form))
+                 (:literal
+                  form))))
            groups))))))
 
 (defun variable-map-from-groups (groups)
@@ -108,11 +110,18 @@
                    (state-never-succeeds-p state))
           append
         `(,(find-state-name state :bounds-check)
+          #+print-traces
+          (print (list :bounds-checking
+                       position
+                       ,(prin1-to-string expression)
+                       ,(minimum-length state)))
           (when (> (the alexandria:array-index
                         (+ position ,(max (minimum-length state) 1)))
                    end)
             (when (> position end)
               (return))
+            #+print-traces
+            (print (list :eof ,(prin1-to-string nullable)))
             ,(if (eq (empty-set) nullable)
                  `(return)
                  ;; We hit EOF and this state is nullable, so
@@ -123,11 +132,17 @@
                     (let ((position (1+ position)))
                       ,(setf-from-assignments
                         (state-exit-effects state)))
-                    (setf start (max position (1+ start)))
+                    #+print-traces
+                    (print (list :exit-map ',(state-exit-map state)
+                                 (1- ,(find-in-map 'end (state-exit-map state)))
+                                 (1+ start)))
+                    (setf start (max (1- ,(find-in-map 'end (state-exit-map state)))
+                                     (1+ start)))
                     (win ,@(win-locations (state-exit-map state))))))
           ,(find-state-name state :no-bounds-check)
           #+print-traces
-          (print (list position
+          (print (list :bounds-ok
+                       position
                        ,(prin1-to-string expression)
                        ,(minimum-length state)))
           (let ((value (,(layout-to-number *layout*)
@@ -174,6 +189,8 @@
                 (transition-tags-to-set transition))
               (setf start (max (1+ start)
                                (1- ,(find-in-map 'end (state-exit-map next-state)))))
+              #+print-traces
+              (print `(:next ,start))
               (win ,@(win-locations (state-exit-map next-state))))))
       ((re-empty-p next-expression)
        `(progn
@@ -251,5 +268,7 @@
   ;; number of spills substantially (at least on SBCL).
   (append (call-next-method)
           `(win
+            #+print-traces
+            (print ':win)
             (funcall continuation)
             (restart))))
