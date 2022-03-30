@@ -66,6 +66,12 @@
   (first-match ""
     "«a*»*" #(0 0 0 0)))
 
+(parachute:define-test annoying-parsing
+  :parent one-more-re-nightmare
+  ;; Per <https://www.ccs.neu.edu/home/turon/re-deriv.pdf>
+  (all-string-matches "/* abc */ /* def */"
+    "/\\*¬($*\\*/$*)\\*/" '(#("/* abc */") #("/* def */"))))
+
 (defun compiler-macroexpand-1 (form)
   (funcall (compiler-macro-function (first form))
            form
