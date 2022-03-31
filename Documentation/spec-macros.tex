@@ -1,0 +1,41 @@
+% The "type" part of @defthing.
+\newcommand{\FloatRight}[1]{\hfill #1}
+% For fancy looking definition section headers.
+\newcommand{\SmallCaps}[1]{\textsc{#1}}
+\renewenvironment{SInsetFlow}{%
+  \hfill\begin{minipage}{\dimexpr\textwidth-2em}%
+}{
+  \end{minipage}\\
+}
+
+\newenvironment{Definitions}{%
+  \vspace{0.5em}
+  \begin{minipage}{\textwidth}
+    \setlength{\parskip}{0.5em}
+    \noindent{\rule{\linewidth}{0.4pt}}
+}{
+  \end{minipage}
+}
+
+\newenvironment{Landscape}{%
+  \begin{landscape}
+}{
+  \end{landscape}    
+}
+
+\newenvironment{CenteredContainer}{}{}
+
+% Okay, not really centering, but I don't know if I really want centering,
+% or just a big indent.
+\newenvironment{CenteredBlock}{%
+  \hfill\begin{minipage}{\dimexpr\textwidth-6em}\raggedright
+}{
+  \end{minipage}
+}
+  
+\setlength{\parindent}{0pt}
+
+% Have each section start on a new page.
+\let\oldsection\section
+\renewcommand\section{\clearpage\oldsection}
+\setlength{\parskip}{0.5em}

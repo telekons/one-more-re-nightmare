@@ -1,0 +1,37 @@
+@media screen and (max-width: 900px) {
+    /* Make the table of contents appear before the main content. */
+    .tocsub {
+        display: none;
+    }
+    .tocset {
+        position: initial;
+        float: none;
+        margin-bottom: 2em;
+    }
+    .tocview {
+        background: transparent;
+    }
+
+    /* We don't need a left margin for the main content now. */
+    .maincolumn, .tocset {
+        width: calc(100% - 4em - var(--card-padding));
+        margin-left: 2em;
+        margin-right: 2em;
+    }
+
+    /* Put margin comments inline too. */
+    .refpara, .refelem, .SAuthorListBox {
+        position: initial;
+        float: none;
+        left: 0;
+        width: 100%;
+        margin: 0;
+        height: initial;
+    }
+
+    .refcolumn {
+        position: initial;
+        width: initial;
+        margin: initial;
+    }
+}

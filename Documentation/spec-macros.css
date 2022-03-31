@@ -1,0 +1,164 @@
+.FloatRight {
+    float: right;
+}
+
+.SmallCaps {
+    font-variant: small-caps;
+}
+
+.Indent {
+    margin-left: 2em;
+}
+
+.Definitions {
+    margin-top: 1em;
+    margin-left: 0;
+    margin-right: 0;
+    border-top: 1px black solid;
+    display: block;
+}
+
+.Landscape {
+    margin: 0;
+}
+
+.Definitions > *:not(:empty):nth-of-type(1) {
+    margin-top: 0.25em;
+}
+
+.TagDescription {
+    float: right;
+    text-style: italic;
+}
+
+.main {
+    text-align: justify;
+}
+
+@media only screen {
+    h4, h5 {
+        background: #dafffe;
+    }
+    h3, h4, h5 {
+        font-size: 120%;
+        margin-bottom: 0.5em;
+    }
+
+    body {
+        background: #eee;
+        color: #111;
+        --card-padding: 8pt;
+        margin: var(--card-padding);
+    }
+
+    .tocset, .maincolumn, .refcolumn {
+        padding: var(--card-padding);
+        background: white;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+        border-radius: 2px;
+    }
+    .maincolumn {
+        width: min(50em, calc(100vw - 12.5em - 13.5em - 10 * var(--card-padding)));
+        margin: 0 auto;
+    }
+    
+    .tocview, .tocsub {
+        background: transparent;
+    }
+    .tocviewlink, .tocviewselflink, .tocsubseclink {
+        color: black;
+    }
+    .tocviewselflink {
+        text-decoration: none;
+        font-weight: 700;
+    }
+
+    h4, h5, .navsettop, .navsetbottom {
+        padding: var(--card-padding);
+        position: relative;
+        left: calc(-1 * var(--card-padding));
+        width: 100%;
+    }
+    .navsettop {
+        top: calc(-1 * var(--card-padding));
+        margin-bottom: calc(-1 * var(--card-padding));
+    }
+
+    .navsettop, .navsetbottom {
+        border: none;
+        background: #FFCDD2;
+    }
+    .navright > a {
+        color: black;
+        font-style: italic;
+        text-decoration: none;
+    }
+    .nonavigation {
+        color: #333;
+    }
+
+    .refpara {
+        left: calc(3 * var(--card-padding));
+    }
+
+    li::marker {
+        color: #888;
+    }
+}
+
+.texMathInline, .texMathDisplay {
+    /* Make the KaTeX output about the same size as the other text. */
+    font-size: 75%;
+}
+.texMathDisplay {
+    /* Attempt to allow scrolling of long mathematical stuff. */
+    display: block;
+    overflow-x: auto;
+    overflow-y: clip;
+}
+
+.CenteredBlock, .CenteredContainer {
+    margin: 0;
+}
+.CenteredBlock {
+    text-align: left;
+}
+
+.CenteredBlock > .SIntrapara, .CenteredBlock > p {
+    margin: 0;
+}
+
+.CenteredContainer {
+    display: block;
+    margin-left: 2em;
+    margin-bottom: 1em;
+    overflow-x: auto;
+    overflow-y: clip;
+}
+
+p:empty {
+    display: none;
+}
+
+tr {
+    vertical-align: top;
+}
+
+.stt {
+    /* Disable italics we inherit from argument lists */
+    font-style: normal;
+}
+
+.refcolumn {
+    text-align: left;
+    border: none;
+}
+
+p {
+    line-height: 1.2;
+}
+
+body {
+    line-height: 1.2;
+    hyphens: auto;
+}
