@@ -56,7 +56,7 @@
                    for value = (case source
                                  ((position) position)
                                  ((nil) 'nil)
-                                 (otherwise (gethash source variables)))
+                                 (otherwise (gethash source variables :unbound)))
                    do (setf (gethash target variables) value))))
       (map 'nil
            (lambda (element)

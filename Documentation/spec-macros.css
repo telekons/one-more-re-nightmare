@@ -147,6 +147,8 @@ tr {
 .stt {
     /* Disable italics we inherit from argument lists */
     font-style: normal;
+    /* Don't try to justify code, that looks bad */
+    text-justify: none;
 }
 
 .refcolumn {

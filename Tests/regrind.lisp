@@ -60,7 +60,9 @@
                   (*end* (length haystack)))
               (handler-case
                   (funcall code haystack 0 (length haystack) result
-                           (constantly nil))
+                           (lambda ()
+                             (loop for p across result
+                                   do (assert (or (null p) (<= 0 p *end*))))))
                 (error (e)
                   (format t "~&Matching ~s on the haystack ~s fails with:~&~a" re haystack e)
                   (setf success nil))
