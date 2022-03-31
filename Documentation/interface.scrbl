@@ -23,7 +23,6 @@ intersections of regular expressions.
       "(E)" "change precedence"
       "¬E" "complement"
       "~E" "complement"
-      "Σ" "every character"
       "$" "every character"
       "c" "literal character"
       "<empty string>" ""]
