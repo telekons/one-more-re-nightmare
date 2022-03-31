@@ -21,57 +21,11 @@ regular expressions, and then for informing me of how to handle
 submatching properly, and my discrete mathematics teachers for
 formally introducing me to finite state machines.
 
-## High level interface
-
-The high level interface implicitly caches and compiles regular expressions,
-specialised to its input vectors. 
-
-`(all-matches regular-expression vector &key start end)` returns a list of all
-`(start end submatch)`s of each match found.
-
-(`submatch` is a vector consisting of either vector indices or `nil`,
-consisting of the start of the first group, then the first end, then the second
-start, and so on.)
-
-`all-string-matches` takes the same arguments and returns a list of all 
-subsequences matching, and a list of vectors of submatch subsequences.
-
-`(first-match regular-expression vector &key start end)` returns the start and 
-end of the first match as multiple values, or two `NIL`s if no match was found.
-
-`first-match` takes the same arguments and returns a subsequence of the first 
-match or `NIL`.
-
-## Low level interface
-
-`(compile-regular-expression regular-expression &key vector-type)` compiles a
-regular expression into a function that takes arguments 
-`(vector start end continuation)`, calling `continuation` with each start and
-end of each match in the `vector` between `start` and `end`.
-
-## Language
-
-The following expressions can be used:
-
-| Regular expression | String syntax |
-|--------------------|---------------|
-| ∑                  | $             |
-| r*                 | R*            |
-| r + s              | R\|S          |
-| r r*               | R+            |
-| r s                | RS            |
-| ¬r                 | ¬R or `R      |
-| r & s              | R&S           |
-| ABC                | ABC           |
-|                    | «R»           |
-| r^n                | R{n}          |
-| a + b + ... z      | [a-z]         |
-| ∑ \\ a             | [¬a]          |
-
-
-`¬R` binds tighter than `R*`, so `¬R*` parses as `(kleene (invert R))`.
-`R|S` also binds tighter than `R&S`, so `A|B&C|D` parses as 
-`(both (join A B) (join C D))`.
+Please see [the reference
+book](https://applied-langua.ge/projects/one-more-re-nightmare/) for
+how to use one-more-re-nightmare, or [an
+article](https://applied-langua.ge/posts/omrn-compiler.html) on the
+history and theory involved.
 
 While the syntax is admittedly wonky (but somewhat more like how
 regular expressions are presented in papers), one-more-re-nightmare
