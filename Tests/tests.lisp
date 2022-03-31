@@ -27,7 +27,7 @@
   ;; (The first OMRN compiler would not do this correctly.)
   (first-match "ababa"
     "ab"  #(0 2)
-    "ab+" #(0 4))
+    "(ab)+" #(0 4))
   ;; The engine should also restart just after the actual match.
   (all-string-matches "ababc"
     "ab"     '(#("ab") #("ab"))

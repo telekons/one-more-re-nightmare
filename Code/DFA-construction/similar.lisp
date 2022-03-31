@@ -3,6 +3,7 @@
 (define-condition no-match () ())
 
 (defvar *environment*)
+(defvar *backward-environment*)
 
 (defun assert-equivalent (from to)
   (when (or (and (eql from 'position) (eql to 'position))
@@ -13,7 +14,12 @@
       (gethash from *environment*)
     (when (and present? (not (equal to old-to)))
       (error 'no-match))
-    (setf (gethash from *environment*) to)))
+    (multiple-value-bind (old-from present?)
+        (gethash to *backward-environment*)
+      (when (and present? (not (equal from old-from)))
+        (error 'no-match))
+      (setf (gethash from *environment*) to
+            (gethash to *backward-environment*) from))))
 
 (defun assert-equivalent-sources (from to)
   "Ensure that we don't unify POSITION and a variable, or two different variables."
@@ -64,7 +70,8 @@
   ((_ _) (error 'no-match)))
 
 (defun similar (from to)
-  (let ((*environment* (make-hash-table :test 'equal)))
+  (let ((*environment* (make-hash-table :test 'equal))
+        (*backward-environment* (make-hash-table :test 'equal)))
     (handler-case
         (values (%similar from to) t)
       (no-match ()

@@ -1,37 +1,40 @@
 (in-package :one-more-re-nightmare)
 
+(esrap:defrule top-level
+    (or two-expressions empty-string))
+(esrap:defrule two-expressions
+    (and expression top-level)
+  (:destructure (a b) (join a b)))
+(esrap:defrule expression
+    (or either below-either))
+(esrap:defrule below-either
+    (or both below-both))
+(esrap:defrule below-both
+    (or join below-join))
+(esrap:defrule below-join
+    (or invert
+        kleene plus repeated
+        parens match-group character-range universal-set
+        literal empty-string))
+
 (defvar *next-group*)
 (defun next-group ()
   (incf *next-group*))
 
-(esrap:defrule escaped-character
-    (and #\\ character)
-  (:destructure (backslash char)
-    (declare (ignore backslash))
-    char))
+(defun parse-regular-expression (string)
+  (let ((*next-group* 0))
+    (values (esrap:parse 'top-level string)
+            *next-group*)))
 
-(esrap:defrule special-character
-    (or "(" ")" "«" "»" "[" "]" "{" "}" "¬" "~" "|" "&" "*" "$" "+"))
-
-#|
-«expression*»
-(expression*)
-under-both   & under-both
-under-either | under-either
-|#
-
-(esrap:defrule literal
-    (or escaped-character (not special-character))
-  (:lambda (character) (literal (symbol-set (char-code character)))))
-
+;;; Parens
 (esrap:defrule parens
-    (and "(" expressions ")")
+    (and "(" expression ")")
   (:destructure (left expression right)
     (declare (ignore left right))
     expression))
 
 (esrap:defrule match-group
-    (and "«" expressions "»")
+    (and "«" expression "»")
   (:around ()
     (let ((group-number (next-group)))
       (destructuring-bind (left expressions right)
@@ -39,6 +42,24 @@ under-either | under-either
         (declare (ignore left right))
         (group expressions group-number)))))
 
+;;; Binary operators
+(esrap:defrule either
+    (and below-either "|" (or either below-either))
+  (:destructure (e1 bar e2)
+    (declare (ignore bar))
+    (either e1 e2)))
+
+(esrap:defrule both
+    (and below-both "&" (or both below-both))
+  (:destructure (e1 bar e2)
+    (declare (ignore bar))
+    (both e1 e2)))
+
+(esrap:defrule join
+    (and below-join (or join below-join))
+  (:destructure (e1 e2) (join e1 e2)))
+
+;;; Repeats
 (defun empty-match (expression)
   (trivia:ematch (nullable expression)
     ((empty-set) (empty-set))
@@ -53,36 +74,32 @@ under-either | under-either
         expression))
 
 (esrap:defrule kleene
-    (and expression "*")
+    (and below-join "*")
   (:destructure (expression star)
     (declare (ignore star))
     (either (empty-match expression)
             (kleene (clear-registers expression)))))
 
 (esrap:defrule plus
-    (and expression "+")
+    (and below-join "+")
   (:destructure (expression plus)
     (declare (ignore plus))
     (join expression (either (empty-match expression) (kleene (clear-registers expression))))))
 
-(esrap:defrule either
-    (and under-either "|" (or either under-either))
-  (:destructure (e1 bar e2)
-    (declare (ignore bar))
-    (either e1 e2)))
-
-(esrap:defrule both
-    (and under-both "&" (or both under-both))
-  (:destructure (e1 bar e2)
-    (declare (ignore bar))
-    (both e1 e2)))
+(esrap:defrule repeated
+    (and below-join "{" integer "}")
+  (:destructure (e left count right)
+    (declare (ignore left right))
+    (reduce #'join (make-array count :initial-element (clear-registers e))
+            :key #'unique-tags)))
 
 (esrap:defrule invert
-    (and (or "¬" "~") under-join)
+    (and (or "¬" "~") below-join)
   (:destructure (bar expression)
     (declare (ignore bar))
     (invert expression)))
 
+;;; "Terminals"
 (esrap:defrule universal-set
     "$"
   (:constant (literal +universal-set+)))
@@ -92,18 +109,11 @@ under-either | under-either
   (:lambda (list)
     (parse-integer (format nil "~{~A~}" list))))
 
-(esrap:defrule repeated
-    (and under-join "{" integer "}")
-  (:destructure (e left count right)
-    (declare (ignore left right))
-    (reduce #'join (make-array count :initial-element (clear-registers e))
-            :key #'unique-tags)))
-
 (esrap:defrule character-range-range
     (and character "-" character)
   (:destructure (low dash high)
     (declare (ignore dash))
-    (symbol-range (char-code low) (char-code high))))
+    (symbol-range (char-code low) (1+ (char-code high)))))
 
 (esrap:defrule character-range-not
     (and "¬" character)
@@ -117,32 +127,19 @@ under-either | under-either
     (declare (ignore left right))
     (literal range)))
 
-(esrap:defrule join
-    (and under-join under-join)
-  (:destructure (e1 e2) (join e1 e2)))
+(esrap:defrule escaped-character
+    (and #\\ character)
+  (:destructure (backslash char)
+    (declare (ignore backslash))
+    char))
+
+(esrap:defrule special-character
+    (or "(" ")" "«" "»" "[" "]" "{" "}" "¬" "~" "|" "&" "*" "$" "+"))
+
+(esrap:defrule literal
+    (or escaped-character (not special-character))
+  (:lambda (character) (literal (symbol-set (char-code character)))))
 
 (esrap:defrule empty-string
     ""
-  (:lambda (x) (declare (ignore x)) (empty-string)))
-
-(esrap:defrule under-join
-    (or repeated character-range match-group parens
-        invert universal-set literal empty-string))
-
-(esrap:defrule under-either
-    (or plus kleene join under-join))
-
-(esrap:defrule under-both
-    (or either under-either))
-
-(esrap:defrule expression
-    (or both under-both))
-
-(esrap:defrule expressions
-    (and expression (or expressions empty-string))
-  (:destructure (e1 e2) (join e1 e2)))
-
-(defun parse-regular-expression (string)
-  (let ((*next-group* 0))
-    (values (esrap:parse 'expressions string)
-            *next-group*)))
+  (:constant (empty-string)))

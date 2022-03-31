@@ -44,6 +44,7 @@
              r*)))
       ((alpha r old-tags)
        (let* ((r* (derivative r set))
+              (*gensym-assignments?* nil)
               (nullable (nullable r)))
          (alpha r*
                 (either nullable old-tags)))))))
