@@ -22,6 +22,7 @@ intersections of regular expressions.
       "«E»" "submatch"
       "(E)" "change precedence"
       "¬E" "complement"
+      "~E" "complement"
       "Σ" "every character"
       "$" "every character"
       "c" "literal character"
@@ -32,6 +33,12 @@ intersections of regular expressions.
 ]
 
 @section{Matching}
+
+Note that one-more-re-nightmare can avoid a cache lookup (involving
+acquiring a lock and hash table searching) if the regular expression
+is a literal string.  @todo{We could handle the case where the string
+is in some constant, e.g. @cl{(defconstant +number+ "[0-9]+")
+(all-matches +number+ text)} surely.}
 
 @definitions{
 @defun["first-match"]{regular-expression vector @&key start end}

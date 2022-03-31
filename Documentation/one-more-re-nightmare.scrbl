@@ -9,5 +9,6 @@
 
 @include-section["introduction.scrbl"]
 @include-section["interface.scrbl"]
+@include-section["linting.scrbl"]
 
 @index-section[]

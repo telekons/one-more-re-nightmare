@@ -34,4 +34,4 @@
           (t
            (loop for n from 1 to groups
                  unless (member n matched-groups)
-                   do (warn 'group-not-matchable :n (1+ n)))))))))
+                   do (warn 'group-not-matchable :n n))))))))
