@@ -6,7 +6,7 @@
    (and (has-literals-p r) (has-literals-p s)))
   ((or (join r s) (both r s))
    (or (has-literals-p r) (has-literals-p s)))
-  ((or (invert r)) (has-literals-p r))
+  ((invert r) (not (has-literals-p r)))
   (_ nil))
 
 (trivia:defun-match effects (re)
