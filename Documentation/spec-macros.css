@@ -37,7 +37,7 @@
 
 @media only screen {
     h4, h5 {
-        background: #dafffe;
+        background: #d1c4e9;
     }
     h3, h4, h5 {
         font-size: 120%;
@@ -161,4 +161,13 @@ p {
 body {
     line-height: 1.2;
     hyphens: auto;
+}
+
+blockquote {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+h2 {
+    margin-top: 0.5em;          /* Foo, who made it 0 in Scribble? */
 }

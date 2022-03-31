@@ -39,7 +39,7 @@ linter to check equivalence of Boolean expressions.
 
 }
 
-@subsection{"The <first> group in this expression is impossible to match."}
+@subsection{"The <n-th> group in this expression is impossible to match."}
 
 @definition-section["Explanation"]{
 
@@ -57,7 +57,7 @@ match is @cl{a}, and the left-hand side of the @cl{|} operator takes
 precedence with POSIX semantics, so the right hand side can never match.
 
 @cl{a|«b&c»} generates the same warning. There are no characters that
-are simultaneously @cl{a} and @cl{b}.
+are simultaneously @cl{b} and @cl{c}.
 
 }
 
@@ -79,8 +79,8 @@ matched with a closing @cl{)}.
 Type errors can be caught at compile-time, signalling full warnings,
 as functions with type errors will always fail at run-time.
 
-@subsection{"This regular expression only produces <two> registers, but
-<four> variables were provided."}
+@subsection{"This regular expression only produces <m> registers, but
+<n> variables were provided."}
 
 @definition-section["Explanation"]{
 
