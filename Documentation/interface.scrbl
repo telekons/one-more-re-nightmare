@@ -12,8 +12,8 @@ intersections of regular expressions.
 @centered-block[
 @bnf[
 @rule["E"
-      "E & E" "intersection"
       "E | E" "union"
+      "E & E" "intersection"
       "E*" "Kleene repetition"
       "E E" "concatenate"
       "E{i}" "repeat"
