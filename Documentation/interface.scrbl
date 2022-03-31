@@ -73,5 +73,5 @@ represents matches as @cl{first-string-match} does.
 }
 
 @definitions{
-@defun["do-matches"]{((@&rest registers) regular-expression vector @&key start end) @&body body}
+@defmacro["do-matches"]{((@&rest registers) regular-expression vector @&key start end) @&body body}
 }
