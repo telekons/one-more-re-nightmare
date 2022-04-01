@@ -119,14 +119,14 @@ alexandria:array-index)} for the remaining variables for @cl{do-matches}.
 
 @definition-section["Examples"]{
 
-@cl{(svref (one-more-re-nightmare:first-match "abc" "abc") 2)} generates the warning
-"Derived type (INTEGER 2 2) is not a suitable index for (SIMPLE-VECTOR 2)."
+@cl{(svref (first-match "abc" "abc") 2)} generates the warning
+"Derived type (INTEGER 2 2) is not a suitable index for (SIMPLE-VECTOR
+2)."
 
-@cl{(one-more-re-nightmare:do-matches ((s) "ab|ac" "ab") (print
-(symbol-name s)))} generates the warning "Derived type of ... is
-(VALUES (MOD ...) &OPTIONAL) conflicting with its asserted type
-SYMBOL." The variable @cl{s} will always be bound to an index, and
-never @cl{nil}, because the first two registers designate the bounds
-of the entire match.
+@cl{(do-matches ((s) "ab|ac" "ab") (print (symbol-name s)))} generates
+the warning "Derived type of ... is (VALUES (MOD ...) &OPTIONAL)
+conflicting with its asserted type SYMBOL." The variable @cl{s} will
+always be bound to an index, and never @cl{nil}, because the first two
+registers designate the bounds of the entire match.
 
 }
