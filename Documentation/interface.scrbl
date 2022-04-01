@@ -41,37 +41,76 @@ is in some constant, e.g. @cl{(defconstant +number+ "[0-9]+")
 (all-matches +number+ text)} surely.}
 
 @definitions{
-@defun["first-match"]{regular-expression vector @&key start end}
+@defun["first-match"]{regular-expression string @&key start end}
 
-@defun["first-string-match"]{regular-expression vector @&key start end}
+@defun["first-string-match"]{regular-expression string @&key start end}
 
-Find the first match for @cl{regular-expression} in @cl{vector}
+Find the first match for @cl{regular-expression} in @cl{string}
 between @cl{start} and @cl{end}.
 
-@cl{first-match} either returns a simple vector, every element of
-which is either an index into @cl{vector} or @cl{nil} (when there is
-no submatch), or @cl{nil} if there is no match.
+@cl{first-match} either returns a simple vector, where each element is
+a @concept{register}. A register is either a bounding index of
+@cl{string} or @cl{nil} (when there is no submatch), or @cl{nil} if
+there is no match.
 
 @cl{first-string-match} either returns a simple vector, every element
 of which is a fresh string or @cl{nil} (when there is no submatch), or
 @cl{nil} if there is no match.
 
+@definition-section["Examples"]{
+@lisp-code{
+(first-match "[0-9]([0-9]| )+" "Phone: 632 3003")
+;; => #(6 15)
+(first-string-match "[0-9]([0-9]| )+" "Phone: 632 3003")
+;; => "632 3003"
+
+(first-match
+ "«[0-9]+»x«[0-9]+»|«[0-9]+»p"
+ "Foobar 1920x1080 17-inch display")
+;; => #(7 16 7 11 12 16 NIL NIL)
+(first-string-match
+ "«[0-9]+»x«[0-9]+»|«[0-9]+»p"
+ "Foobar 1920x1080 17-inch display")
+;; => #("1920x1080" "1920" "1080" NIL)
+}
+}
 }
 
 @definitions{
-@defun["all-matches"]{regular-expression vector @&key start end}
+@defun["all-matches"]{regular-expression string @&key start end}
 
-@defun["all-string-matches"]{regular-expression vector @&key start end}
+@defun["all-string-matches"]{regular-expression string @&key start end}
 
-Find all matches for @cl{regular-expression} in @cl{vector} between
+Find all matches for @cl{regular-expression} in @cl{string} between
 @cl{start} and @cl{end}.
 
 Both functions return a list of matches; @cl{all-matches} represents
 matches as @cl{first-match} does, and @cl{all-string-matches}
 represents matches as @cl{first-string-match} does.
 
+@definition-section["Examples"]{
+@lisp-code{
+(all-matches
+ "«[0-9]+»x«[0-9]+»|«[0-9]+»p"
+ "Foobar 1920x1080 17-inch display or Quux 19-inch 720p display?")
+;; => (#(7 16 7 11 12 16 NIL NIL) #(49 53 NIL NIL NIL NIL 49 52))
+(all-string-matches
+ "«[0-9]+»x«[0-9]+»|«[0-9]+»p"
+ "Foobar 1920x1080 17-inch display or Quux 19-inch 720p display?")
+;; => (#("1920x1080" "1920" "1080" NIL) #("720p" NIL NIL "720"))
+}
+}
 }
 
 @definitions{
-@defmacro["do-matches"]{((@&rest registers) regular-expression vector @&key start end) @&body body}
+@defmacro["do-matches"]{((@&rest registers) regular-expression string @&key start end) @&body body}
+
+@cl{do-matches} iterates over all matches for @cl{regular-expression}
+across @cl{string}. The @cl{registers} variables are bound to the
+@term{registers} produced, which are either bounding indices of
+@cl{string} or @cl{nil} (when there is no submatch).
+
+It is possible to provide fewer variables than registers in the
+regular expression, but an error will be signalled if there are more
+variables than registers.
 }

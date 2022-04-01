@@ -144,7 +144,7 @@
                               :start start :end end)))
     (if (null results)
         nil
-        (subseq vector (svref results 0) (svref results 1)))))
+        (subsequences vector results))))
 
 (define-compiler-macro first-string-match (&whole w
                                            regular-expression vector
@@ -185,7 +185,10 @@
                                  (let ,(loop for register in registers
                                              for n from 0
                                              collect `(,register (svref ,match-vector ,n)))
-                                   (declare ((or null alexandria:array-index) ,@registers))
+                                   ,(if (>= (length registers) 2)
+                                        `(declare ((or null alexandria:array-index) ,@(subseq registers 2))
+                                                  (alexandria:array-index ,@(subseq registers 0 2)))
+                                        `(declare (alexandria:array-index ,@registers)))
                                    ,@body))))))
                (fallback ()
                  (alexandria:once-only (vector)
