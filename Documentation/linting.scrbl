@@ -106,9 +106,14 @@ provided the variable names @cl{s1} and @cl{e1} for a submatch.
 one-more-re-nightmare provides specific types to SBCL for regular
 expressions provided as string literals. The SBCL compiler can use
 these types to detect errors in code that uses the results produced by
-one-more-re-nightmare. Specifically, for a regular expression with
-@${n} submatches, one-more-re-nightmare provides the type
-@code-template{(or null (simple-vector @var{@${2(n+1)}}))}.
+one-more-re-nightmare.
+
+Specifically, one-more-re-nightmare provides the return type
+@code-template{(or null (simple-vector @var{@${2(n+1)}}))} for a call
+to @cl{first-match} with a regular expression with @${n} submatches.
+one-more-re-nightmare provides the type @cl{alexandria:array-index}
+for the first two register variables, and the type @cl{(or null
+alexandria:array-index)} for the remaining variables for @cl{do-matches}.
 
 }
 
@@ -116,5 +121,12 @@ one-more-re-nightmare. Specifically, for a regular expression with
 
 @cl{(svref (one-more-re-nightmare:first-match "abc" "abc") 2)} generates the warning
 "Derived type (INTEGER 2 2) is not a suitable index for (SIMPLE-VECTOR 2)."
+
+@cl{(one-more-re-nightmare:do-matches ((s) "ab|ac" "ab") (print
+(symbol-name s)))} generates the warning "Derived type of ... is
+(VALUES (MOD ...) &OPTIONAL) conflicting with its asserted type
+SYMBOL." The variable @cl{s} will always be bound to an index, and
+never @cl{nil}, because the first two registers designate the bounds
+of the entire match.
 
 }
