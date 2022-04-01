@@ -46,7 +46,8 @@
      (t
       ,bailout-form)))
 
-(declaim (inline %all-matches))
+(declaim (inline %all-matches)
+         (ftype (function * list) %all-matches all-matches))
 (defun %all-matches (function size vector start end)
   (declare (alexandria:array-index start end)
            (function function)
