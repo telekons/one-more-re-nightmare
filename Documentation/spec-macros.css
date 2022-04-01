@@ -35,6 +35,11 @@
     text-align: justify;
 }
 
+h1, h2, h3, h4, h5 {
+    font-family: "Open Sans", sans-serif;
+    text-align: left;
+}
+
 @media only screen {
     h4, h5 {
         background: #d1c4e9;
@@ -172,4 +177,10 @@ blockquote {
 
 h2 {
     margin-top: 0.5em;          /* Foo, who made it 0 in Scribble? */
+}
+
+.AutobibLink {
+    color: #111;
+    font-style: italic;
+    text-decoration: dashed underline;
 }
