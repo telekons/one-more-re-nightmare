@@ -32,6 +32,10 @@ intersections of regular expressions.
 ]
 ]
 
+Rules higher on this list are "looser" than rules lower on the list.
+For example, the expression @cl{ab&cd|ef} is equivalent to
+@cl{((ab)&(cd))|(ef)}.
+
 @section{Matching}
 
 Note that one-more-re-nightmare can avoid a cache lookup (involving
@@ -49,7 +53,9 @@ Find the first match for @cl{regular-expression} in @cl{string}
 between @cl{start} and @cl{end}.
 
 @cl{first-match} either returns a simple vector, where each element is
-a @concept{register}. A register is either a bounding index of
+a @concept{register}. The first two registers are always the start and end
+of the match, and then subsequent registers are the start and end of
+each submatch. A register is either a bounding index of
 @cl{string} or @cl{nil} (when there is no submatch), or @cl{nil} if
 there is no match.
 
@@ -103,12 +109,12 @@ represents matches as @cl{first-string-match} does.
 }
 
 @definitions{
-@defmacro["do-matches"]{((@&rest registers) regular-expression string @&key start end) @&body body}
+@defmacro["do-matches"]{((@&rest registers) regular-expression string
+                                 @&key start end) @&body body}
 
 @cl{do-matches} iterates over all matches for @cl{regular-expression}
 across @cl{string}. The @cl{registers} variables are bound to the
-@term{registers} produced, which are either bounding indices of
-@cl{string} or @cl{nil} (when there is no submatch).
+@term{registers} produced, as described for @cl{first-match}.
 
 It is possible to provide fewer variables than registers in the
 regular expression, but an error will be signalled if there are more

@@ -2,7 +2,7 @@
 
 @require[scribble/core scribble/html-properties "bibliography.rkt"]
 
-@title{The one-more-re-nightmare Manual}
+@title{The @emph{one-more-re-nightmare} Manual}
 @author{Applied Language}
 
 @table-of-contents[]
