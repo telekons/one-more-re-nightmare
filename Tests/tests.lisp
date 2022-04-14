@@ -72,6 +72,13 @@
   (all-string-matches "/* abc */ /* def */"
     "/\\*¬($*\\*/$*)\\*/" '(#("/* abc */") #("/* def */"))))
 
+(parachute:define-test annoying-negation
+  :parent one-more-re-nightmare
+  ;; We used to erroneously rewrite ¬ε to ø, which is plain wrong.
+  (all-string-matches "abcde"
+    "¬a" '(#("abcde") #(""))
+    "$+&¬a" '(#("abcde"))))
+
 (defun compiler-macroexpand-1 (form)
   (funcall (compiler-macro-function (first form))
            form
