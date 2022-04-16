@@ -42,7 +42,7 @@
 
 (defun regrind (n &key (depth 4))
   (let ((success t))
-    (lparallel:pdotimes (i n success)
+    (lparallel:pdotimes (i n success n)
       (let* ((*remaining-depth* depth)
              (one-more-re-nightmare::*code-type* :interpreted)
              (re (random-re))
