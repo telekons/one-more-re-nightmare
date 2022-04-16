@@ -3,7 +3,7 @@
 (require scriblib/autobib)
 (provide generate-bibliography ~cite
          derivatives apl3000 derivatives-reexamined
-         rte petalisp)
+         rte petalisp cox)
 
 (define-cite ~cite citet generate-bibliography)
 
@@ -44,3 +44,9 @@
   "Marco Heisig"
   2018
   #:url "https://dl.acm.org/doi/10.5555/3323215.3323216")
+
+(define-bib cox
+  "Regular Expression Matching: the Virtual Machine Approach"
+  "Russ Cox"
+  2009
+  #:url "https://swtch.com/~rsc/regexp/regexp2.html")
