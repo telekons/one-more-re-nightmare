@@ -1,7 +1,9 @@
 % The "type" part of @defthing.
 \newcommand{\FloatRight}[1]{\nobreak\hfill\enspace #1}
+\newcommand{\Param}[1]{\mbox{#1}}
 % For fancy looking definition section headers.
 \newcommand{\SmallCaps}[1]{\textsc{#1}}
+
 \renewenvironment{SInsetFlow}{%
   \hfill\begin{minipage}{\dimexpr\textwidth-2em}%
 }{
@@ -15,6 +17,24 @@
     \noindent{\rule{\linewidth}{0.4pt}}
 }{
   \end{minipage}
+}
+
+% Definition lines
+% Thanks to https://tex.stackexchange.com/questions/312581/how-to-calculate-width-of-remaining-part-of-line
+% for more or less showing how to get this layout working.
+
+\newsavebox{\defunnamebox}
+\newlength{\defunnamewidth}
+
+\newcommand{\DefunName}[1]{%
+  \sbox{\defunnamebox}{\strut \textbf{#1}}%
+  \global\defunnamewidth=\wd\defunnamebox
+  \usebox{\defunnamebox}%
+}
+\newcommand{\LambdaList}[1]{%
+  \parbox[t]{\dimexpr\columnwidth-\defunnamewidth-\fboxsep}{
+    \raggedright\strut\emph{#1}
+  }%
 }
 
 \newenvironment{Landscape}{%

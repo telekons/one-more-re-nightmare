@@ -9,7 +9,7 @@
           defaccessor defreader definitarg
           defclass defprotoclass defvar
           cl lisp-code
-          &keyword &key &optional &rest &allow-other-keys &body
+          param &keyword &key &optional &rest &allow-other-keys &body
           term concept
           bnf rule tag-rule
           todo note
@@ -36,6 +36,12 @@
    (make-style "CenteredBlock" block-thing-additions))
 @(define centered-container-style
    (make-style "CenteredContainer" block-thing-additions))
+@(define param-style
+   (make-style "Param" spec-macro-additions))
+@(define defun-name-style
+   (make-style "DefunName" (cons (alt-tag "b") spec-macro-additions)))
+@(define lambda-list-style
+   (make-style "LambdaList" (cons (alt-tag "i") spec-macro-additions)))
 
 @(define @float-right[thing]
    (elem thing #:style float-right-style))
@@ -50,11 +56,13 @@
            #:style centered-container-style))
 
 @(define @defthing[name more type #:index? [index? #t]]
-   (let ([base (list (bold name) " " more (float-right (italic type)))])
-     (if index?
-         (index* (list name) (list (list (string-append name " " type)))
-                 base)
-         base)))
+   (let ([base (list (elem name #:style defun-name-style)
+                     " " (elem (list more (float-right (italic type)))
+                               #:style lambda-list-style))])
+    (if index?
+        (index* (list name) (list (list (string-append name " " type)))
+                base)
+        base)))
 
 @(define (definition-section name . things)
    (list (linebreak)
@@ -112,6 +120,7 @@
 @(define (&keyword name)
    (elem #:style 'tt "&" name))
 
+@(define (param . stuff) (elem stuff #:style param-style))
 @(define &key @&keyword{key})
 @(define &rest @&keyword{rest})
 @(define &body @&keyword{body})

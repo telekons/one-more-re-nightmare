@@ -45,9 +45,9 @@ is in some constant, e.g. @cl{(defconstant +number+ "[0-9]+")
 (all-matches +number+ text)} surely.}
 
 @definitions{
-@defun["first-match"]{regular-expression string @&key start end}
+@defun["first-match"]{regular-expression string @param{@&key start end}}
 
-@defun["first-string-match"]{regular-expression string @&key start end}
+@defun["first-string-match"]{regular-expression string @param{@&key start end}}
 
 Find the first match for @cl{regular-expression} in @cl{string}
 between @cl{start} and @cl{end}.
@@ -83,9 +83,9 @@ of which is a fresh string or @cl{nil} (when there is no submatch), or
 }
 
 @definitions{
-@defun["all-matches"]{regular-expression string @&key start end}
+@defun["all-matches"]{regular-expression string @param{@&key start end}}
 
-@defun["all-string-matches"]{regular-expression string @&key start end}
+@defun["all-string-matches"]{regular-expression string @param{@&key start end}}
 
 Find all matches for @cl{regular-expression} in @cl{string} between
 @cl{start} and @cl{end}.
@@ -109,8 +109,9 @@ represents matches as @cl{first-string-match} does.
 }
 
 @definitions{
-@defmacro["do-matches"]{((@&rest registers) regular-expression string
-                                 @&key start end) @&body body}
+@defmacro["do-matches"]{((@param{@&rest registers}) regular-expression
+                        string @param{@&key start end})
+                        @param{@&body body}}
 
 @cl{do-matches} iterates over all matches for @cl{regular-expression}
 across @cl{string}. The @cl{registers} variables are bound to the
