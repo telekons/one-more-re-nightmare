@@ -1,3 +1,9 @@
 *~
 *.fasl
 .*
+Documentation/*.aux
+Documentation/*.log
+Documentation/*.out
+Documentation/*.pdf
+Documentation/*.toc
+Documentation/one-more-re-nightmare.tex
