@@ -6,7 +6,7 @@
   :serial t
   :components ((:file "package")
                (:file "code-generation")
-               (:file "sbcl-x86-64")
+               (:file "new-sbcl-x86-64")
                (:file "prefix")
                (:file "prefix-strategy")
                (:file "loop")))

@@ -31,11 +31,9 @@
   ('nil :never)
   ;; All the Boolean operators just map over their arguments.
   ((list 'not thing)
-   `(one-more-re-nightmare.vector-primops:v-not
-     ,(%translate-scalar-code thing)))
+   `(,(find-op "NOT") ,(%translate-scalar-code thing)))
   ((list* 'or things)
-   `(one-more-re-nightmare.vector-primops:v-or
-     ,@(mapcar #'%translate-scalar-code things)))
+   `(,(find-op "OR") ,@(mapcar #'%translate-scalar-code things)))
   ;; Ditto for = really.
   ((list '= value variable)
    ;; Note that = works the same if it's signed or not; it's only >
@@ -56,12 +54,12 @@
    ;; Similarly, N ≤ X ⇔ X > N - 1
    (ecase *bits*
      (32
-      `(one-more-re-nightmare.vector-primops:v-and
+      `(one-more-re-nightmare.vector-primops:v-and32
         ;; Similarly, N ≤ X ⇔ X > N - 1
         (one-more-re-nightmare.vector-primops:v32> ,value ,(find-broadcast (1- low)))
         (one-more-re-nightmare.vector-primops:v32> ,(find-broadcast (1+ high)) ,value)))
      (8
-      `(one-more-re-nightmare.vector-primops:v-and
+      `(one-more-re-nightmare.vector-primops:v-and8
         (one-more-re-nightmare.vector-primops:v8> ,(swizzle-8-bits)
                                                   ,(find-8-bit-broadcast (1- low)))
         (one-more-re-nightmare.vector-primops:v8> ,(find-8-bit-broadcast (1+ high))

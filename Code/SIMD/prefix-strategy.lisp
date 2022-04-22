@@ -90,6 +90,10 @@ A prefix P of some regular expression R is defined to be a sequence of literals 
             ('(simple-array base-char 1) 8)
             (otherwise nil))))
     (cond
+      ((eql *code-type* :interpreted)
+       ;; Interpreter doesn't recognise VOPs, so we can't use SIMD.
+       ;; Not that you'd really want to.
+       (make-instance (dynamic-mixins:mix 'scan-everything 'call-continuation)))
       ((and (> (count :literal (prefix expression) :key #'first) 1)
             (not (null bits)))
        (make-instance (dynamic-mixins:mix 'simd-loop 'simd-prefix 'call-continuation)

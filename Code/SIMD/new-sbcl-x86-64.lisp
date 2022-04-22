@@ -31,10 +31,10 @@
   ('nil :never)
   ;; All the Boolean operators just map over their arguments.
   ((list 'not thing)
-   `(one-more-re-nightmare.vector-primops:v-not
+   `(,(find-op "NOT")
      ,(%translate-scalar-code thing)))
   ((list* 'or things)
-   `(one-more-re-nightmare.vector-primops:v-or
+   `(,(find-op "OR")
      ,@(mapcar #'%translate-scalar-code things)))
   ;; Ditto for = really.
   ((list '= value variable)
@@ -56,12 +56,12 @@
    ;; Similarly, N ≤ X ⇔ X > N - 1
    (ecase *bits*
      (32
-      `(one-more-re-nightmare.vector-primops:v-and
+      `(one-more-re-nightmare.vector-primops:v-and32
         ;; Similarly, N ≤ X ⇔ X > N - 1
         (one-more-re-nightmare.vector-primops:v32> ,value ,(find-broadcast (1- low)))
         (one-more-re-nightmare.vector-primops:v32> ,(find-broadcast (1+ high)) ,value)))
      (8
-      `(one-more-re-nightmare.vector-primops:v-and
+      `(one-more-re-nightmare.vector-primops:v-and8
         (one-more-re-nightmare.vector-primops:v8> ,(swizzle-8-bits)
                                                   ,(find-8-bit-broadcast (1- low)))
         (one-more-re-nightmare.vector-primops:v8> ,(find-8-bit-broadcast (1+ high))
@@ -79,18 +79,21 @@
        (:result-types ,(second result))
        (:generator 0 ,@generator))))
 
-(defmacro define-op (name args instruction-name)
-  `(progn
-     (sb-c:defknown ,name
-         ,(loop for nil in args collect '(sb-ext:simd-pack-256 integer))
-         (sb-ext:simd-pack-256 integer)
-         (sb-c:foldable sb-c:flushable sb-c:movable)
-       :overwrite-fndb-silently t)
-     (define-boring-vop ,name
-         ,(loop for arg in args
-                collect `(,arg sb-vm::simd-pack-256-int :scs (sb-vm::int-avx2-reg)))
-         (result sb-vm::simd-pack-256-int :scs (sb-vm::int-avx2-reg))
-       (sb-vm::inst ,instruction-name result ,@args))))
+(defmacro define-op (name bits args instruction-name)
+  (let ((primitive-type (ecase bits
+                          (8 'sb-vm::simd-pack-256-ub8)
+                          (32 'sb-vm::simd-pack-256-ub32))))
+    `(progn
+       (sb-c:defknown ,name
+           ,(loop for nil in args collect `(sb-ext:simd-pack-256 (unsigned-byte ,bits)))
+           (sb-ext:simd-pack-256 (unsigned-byte ,bits))
+           (sb-c:foldable sb-c:flushable sb-c:movable)
+         :overwrite-fndb-silently t)
+       (define-boring-vop ,name
+           ,(loop for arg in args
+                  collect `(,arg ,primitive-type :scs (sb-vm::int-avx2-reg)))
+           (result ,primitive-type :scs (sb-vm::int-avx2-reg))
+         (sb-vm::inst ,instruction-name result ,@args)))))
 
 (defconstant one-more-re-nightmare.vector-primops:+v-length+ 256)
 
@@ -99,55 +102,62 @@
 ;;;; Boolean operations
 
 (one-more-re-nightmare::define-op
-    one-more-re-nightmare.vector-primops:v-and (a b) vpand)
+    one-more-re-nightmare.vector-primops:v-and8 8 (a b) vpand)
+(one-more-re-nightmare::define-op
+    one-more-re-nightmare.vector-primops:v-and32 32 (a b) vpand)
 
 (one-more-re-nightmare::define-op
-    one-more-re-nightmare.vector-primops:v-or (a b) vpor)
+    one-more-re-nightmare.vector-primops:v-or8 8 (a b) vpor)
+(one-more-re-nightmare::define-op
+    one-more-re-nightmare.vector-primops:v-or32 32 (a b) vpor)
 
-(defknown one-more-re-nightmare.vector-primops:v-not
-    ((simd-pack-256 integer))
-    (simd-pack-256 integer)
-    (foldable flushable movable)
-  :overwrite-fndb-silently t)
-
-(define-vop (one-more-re-nightmare.vector-primops:v-not)
-  (:translate one-more-re-nightmare.vector-primops:v-not)
-  (:policy :fast-safe)
-  (:args (value :scs (int-avx2-reg)))
-  (:arg-types simd-pack-256-int)
-  (:results (result :scs (int-avx2-reg)))
-  (:result-types simd-pack-256-int)
-  (:temporary (:sc int-avx2-reg) ones)
-  (:generator 0
-    (inst vpcmpeqd ones ones ones)      ; get all 1s
-    (inst vpxor result ones value)))    ; 1111... (+) A = ¬A
+(macrolet ((frob (name bits arg-type)
+             `(progn
+                (defknown ,name
+                    ((simd-pack-256 (unsigned-byte ,bits)))
+                    (simd-pack-256 (unsigned-byte ,bits))
+                    (foldable flushable movable)
+                  :overwrite-fndb-silently t)
+                (define-vop (,name)
+                  (:translate ,name)
+                  (:policy :fast-safe)
+                  (:args (value :scs (int-avx2-reg)))
+                  (:arg-types ,arg-type)
+                  (:results (result :scs (int-avx2-reg)))
+                  (:result-types ,arg-type)
+                  (:temporary (:sc int-avx2-reg) ones)
+                  (:generator 0
+                    (inst vpcmpeqd ones ones ones)      ; get all 1s
+                    (inst vpxor result ones value)))))) ; 1111... (+) A = ¬A
+  (frob one-more-re-nightmare.vector-primops:v-not8 8 simd-pack-256-ub8)
+  (frob one-more-re-nightmare.vector-primops:v-not32 32 simd-pack-256-ub32))
 
 ;;;; Comparisons
 
 ;; This is a signed comparison, but as there are fewer than 2³¹
 ;; Unicode characters, no one needs to know that.
 (one-more-re-nightmare::define-op
-    one-more-re-nightmare.vector-primops:v32> (a b) vpcmpgtd)
+    one-more-re-nightmare.vector-primops:v32> 32 (a b) vpcmpgtd)
 
 ;; We do need to know that this is a signed comparison, since we do
 ;; want to target (UNSIGNED-BYTE 8) too, and we handle it above.
 (one-more-re-nightmare::define-op
-    one-more-re-nightmare.vector-primops:v8> (a b) vpcmpgtb)
+    one-more-re-nightmare.vector-primops:v8> 8 (a b) vpcmpgtb)
 
 (one-more-re-nightmare::define-op
-    one-more-re-nightmare.vector-primops:v32= (a b) vpcmpeqd)
+    one-more-re-nightmare.vector-primops:v32= 32 (a b) vpcmpeqd)
 
 (one-more-re-nightmare::define-op
-    one-more-re-nightmare.vector-primops:v8= (a b) vpcmpeqb)
+    one-more-re-nightmare.vector-primops:v8= 8 (a b) vpcmpeqb)
 
 (one-more-re-nightmare::define-op
-    one-more-re-nightmare.vector-primops:v8- (a b) vpsubb)
+    one-more-re-nightmare.vector-primops:v8- 8 (a b) vpsubb)
 
 ;;;; Broadcasts
 
 (defknown one-more-re-nightmare.vector-primops:v-broadcast32
     ((unsigned-byte 32))
-    (simd-pack-256 integer)
+    (simd-pack-256 (unsigned-byte 32))
     ;; Not constant folding, because loading a folded broadcast is
     ;; slower than reproducing it again.
     (flushable movable)
@@ -156,46 +166,46 @@
 (one-more-re-nightmare::define-boring-vop
     one-more-re-nightmare.vector-primops:v-broadcast32
     ((integer unsigned-num :scs (unsigned-reg)))
-    (result simd-pack-256-int :scs (int-avx2-reg))
+    (result simd-pack-256-ub32 :scs (int-avx2-reg))
   (inst movq result integer)
   (inst vpbroadcastd result result))
 
 (defknown one-more-re-nightmare.vector-primops:v-broadcast8
     ((unsigned-byte 8))
-    (simd-pack-256 integer)
+    (simd-pack-256 (unsigned-byte 8))
     (flushable movable)
   :overwrite-fndb-silently t)
 
 (one-more-re-nightmare::define-boring-vop
     one-more-re-nightmare.vector-primops:v-broadcast8
     ((integer unsigned-num :scs (unsigned-reg)))
-    (result simd-pack-256-int :scs (int-avx2-reg))
+    (result simd-pack-256-ub8 :scs (int-avx2-reg))
   (inst movq result integer)
   (inst vpbroadcastb result result))
 
 ;;;; Move mask
 
 (defknown one-more-re-nightmare.vector-primops:v-movemask32
-    ((simd-pack-256 integer))
+    ((simd-pack-256 (unsigned-byte 32)))
     (unsigned-byte 8)
     (flushable movable)
   :overwrite-fndb-silently t)
 
 (one-more-re-nightmare::define-boring-vop
     one-more-re-nightmare.vector-primops:v-movemask32
-    ((pack simd-pack-256-int :scs (int-avx2-reg)))
+    ((pack simd-pack-256-ub32 :scs (int-avx2-reg)))
     (result unsigned-num :scs (unsigned-reg))
   (inst vmovmskps result pack))
 
 (defknown one-more-re-nightmare.vector-primops:v-movemask8
-    ((simd-pack-256 integer))
+    ((simd-pack-256 (unsigned-byte 8)))
     (unsigned-byte 32)
     (flushable movable)
   :overwrite-fndb-silently t)
 
 (one-more-re-nightmare::define-boring-vop
     one-more-re-nightmare.vector-primops:v-movemask8
-    ((pack simd-pack-256-int :scs (int-avx2-reg)))
+    ((pack simd-pack-256-ub8 :scs (int-avx2-reg)))
     (result unsigned-num :scs (unsigned-reg))
   (inst vpmovmskb result pack))
 
@@ -203,7 +213,7 @@
 
 (defknown one-more-re-nightmare.vector-primops:v-load32
     ((simple-array character 1) sb-int:index)
-    (simd-pack-256 integer)
+    (simd-pack-256 (unsigned-byte 32))
     (foldable flushable movable)
   :overwrite-fndb-silently t)
 
@@ -211,7 +221,7 @@
     one-more-re-nightmare.vector-primops:v-load32
     ((string simple-character-string :scs (descriptor-reg))
      (index tagged-num :scs (any-reg)))
-    (result simd-pack-256-int :scs (int-avx2-reg))
+    (result simd-pack-256-ub32 :scs (int-avx2-reg))
   (inst vmovdqu result
         (ea (- (* vector-data-offset n-word-bytes)
                other-pointer-lowtag)
@@ -221,7 +231,7 @@
 
 (defknown one-more-re-nightmare.vector-primops:v-load8
     ((simple-array base-char 1) sb-int:index)
-    (simd-pack-256 integer)
+    (simd-pack-256 (unsigned-byte 8))
     (foldable flushable movable)
   :overwrite-fndb-silently t)
 
@@ -229,7 +239,7 @@
     one-more-re-nightmare.vector-primops:v-load8
     ((string simple-base-string :scs (descriptor-reg))
      (index unsigned-num :scs (unsigned-reg)))
-    (result simd-pack-256-int :scs (int-avx2-reg))
+    (result simd-pack-256-ub8 :scs (int-avx2-reg))
   (inst vmovdqu result
         (ea (- (* vector-data-offset n-word-bytes)
                other-pointer-lowtag)
