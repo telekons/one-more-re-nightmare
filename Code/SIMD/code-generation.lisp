@@ -33,8 +33,7 @@
                   ,(setf-from-assignments tags))
                assignments))))
     (values
-     (reduce (lambda (a b) `(,(find-op "AND") ,a ,b))
-             tests)
+     (one-more-re-nightmare.vector-primops:all-of tests)
      loads
      `(progn ,@(reverse assignments))
      n)))

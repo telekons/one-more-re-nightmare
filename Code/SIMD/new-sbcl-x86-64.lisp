@@ -95,6 +95,10 @@
            (result ,primitive-type :scs (sb-vm::int-avx2-reg))
          (sb-vm::inst ,instruction-name result ,@args)))))
 
+(defun one-more-re-nightmare.vector-primops:all-of (variables)
+  (reduce (lambda (a b) `(,(find-op "AND") ,a ,b))
+          variables))
+
 (defconstant one-more-re-nightmare.vector-primops:+v-length+ 256)
 
 (in-package :sb-vm)

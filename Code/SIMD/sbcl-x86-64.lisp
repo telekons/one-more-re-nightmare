@@ -31,9 +31,11 @@
   ('nil :never)
   ;; All the Boolean operators just map over their arguments.
   ((list 'not thing)
-   `(,(find-op "NOT") ,(%translate-scalar-code thing)))
+   `(one-more-re-nightmare.vector-primops:v-not
+     ,(%translate-scalar-code thing)))
   ((list* 'or things)
-   `(,(find-op "OR") ,@(mapcar #'%translate-scalar-code things)))
+   `(one-more-re-nightmare.vector-primops:v-or
+     ,@(mapcar #'%translate-scalar-code things)))
   ;; Ditto for = really.
   ((list '= value variable)
    ;; Note that = works the same if it's signed or not; it's only >
@@ -54,12 +56,12 @@
    ;; Similarly, N ≤ X ⇔ X > N - 1
    (ecase *bits*
      (32
-      `(one-more-re-nightmare.vector-primops:v-and32
+      `(one-more-re-nightmare.vector-primops:v-and
         ;; Similarly, N ≤ X ⇔ X > N - 1
         (one-more-re-nightmare.vector-primops:v32> ,value ,(find-broadcast (1- low)))
         (one-more-re-nightmare.vector-primops:v32> ,(find-broadcast (1+ high)) ,value)))
      (8
-      `(one-more-re-nightmare.vector-primops:v-and8
+      `(one-more-re-nightmare.vector-primops:v-and
         (one-more-re-nightmare.vector-primops:v8> ,(swizzle-8-bits)
                                                   ,(find-8-bit-broadcast (1- low)))
         (one-more-re-nightmare.vector-primops:v8> ,(find-8-bit-broadcast (1+ high))
@@ -89,6 +91,10 @@
                 collect `(,arg sb-vm::simd-pack-256-int :scs (sb-vm::int-avx2-reg)))
          (result sb-vm::simd-pack-256-int :scs (sb-vm::int-avx2-reg))
        (sb-vm::inst ,instruction-name result ,@args))))
+
+(defun one-more-re-nightmare.vector-primops:all-of (variables)
+  (reduce (lambda (a b) `(one-more-re-nightmare.vector-primops:v-and ,a ,b))
+          variables))
 
 (defconstant one-more-re-nightmare.vector-primops:+v-length+ 256)
 
