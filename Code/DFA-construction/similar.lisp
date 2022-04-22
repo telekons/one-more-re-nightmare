@@ -61,13 +61,11 @@
             (assert-equivalent-sources s1 s2)
             (assert-equivalent (list v1 r1)
                                (list v2 r2))))
-  (((grep r1 p1) (grep r2 p2))
-   (%similar r1 r2)
+  (((grep r1 _) (grep r2 _))
    ;; We don't actually need to do anything for GREP prototypes; they
    ;; never cause effects, and they never change while generating a
    ;; DFA. Unifying them just causes unnecessary failures.
-   #+(or)
-   (%similar p1 p2))
+   (%similar r1 r2))
   (((alpha r1 n1) (alpha r2 n2))
    ;; Though we do need to unify the history/nullable part of ALPHA.
    (%similar r1 r2)
