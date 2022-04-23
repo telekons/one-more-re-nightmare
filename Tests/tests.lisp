@@ -98,12 +98,20 @@
   :parent one-more-re-nightmare
   (compiler-macro-warns
    (one-more-re-nightmare:all-matches "a|«a»" s)
-   style-warning
+   one-more-re-nightmare:not-matchable-style-warning
    "A style-warning should be generated for dead submatches.")
   (compiler-macro-warns
    (one-more-re-nightmare:all-matches "a&b" s)
-   style-warning
+   one-more-re-nightmare:not-matchable-style-warning
    "A style-warning should be generated for dead REs.")
+  (compiler-macro-warns
+   (one-more-re-nightmare:all-matches "" s)
+   one-more-re-nightmare:matching-too-much-style-warning
+   "A style-warning should be generated for REs that only match the empty string.")
+  (compiler-macro-warns
+   (one-more-re-nightmare:all-matches "a*" s)
+   one-more-re-nightmare:matching-too-much-style-warning
+   "A style-warning should be generated for REs that match the empty string.")
   (compiler-macro-warns
    (one-more-re-nightmare:all-matches "«a" s)
    full-warning
