@@ -10,13 +10,15 @@ of the machine, so it can perform analysis with no false positives or
 negatives.
 
 Linting occurs when regular expressions are provided as literal
-strings in the source code.
+strings in the source code. All @term{style warnings} generated are of the
+type @cl{lint-style-warning}.
 
 @section{Unreachability}
 
 The following issues generate @term{style warnings} at
-compile-time. They do not indicate that something will go wrong at
-run-time, but their behaviour is rarely desirable.
+compile-time, of type @cl{not-matchable-style-warning}. They do not
+indicate that something will go wrong at run-time, but their behaviour
+is rarely desirable.
 
 @subsection{"This expression is impossible to match."}
 
@@ -58,6 +60,67 @@ precedence with POSIX semantics, so the right hand side can never match.
 
 @cl{a|«b&c»} generates the same warning. There are no characters that
 are simultaneously @cl{b} and @cl{c}.
+
+}
+
+@section{Matching too much}
+
+Some regular expressions may match at every position, which is usually
+a sign of a mistake, as one usually wants to extract something from a
+string, and not everything. The following issues generate
+@term{style warnings} at compile-time, of type
+@cl{matching-too-much-style-warning}.
+
+@subsection{"This expression matches the empty string at every position."}
+
+@definition-section["Explanation"]{
+
+The expression will match at every position, and most matches will
+have zero length. Often some @cl{*} repetition needs to be replaced with
+some @cl{+} repetition, to ensure matches contain at least one character.
+
+}
+
+@definition-section["Examples"]{
+
+The following code will produce too many matches:
+
+@lisp-code{
+(defun numbers (string)
+  (one-more-re-nightmare:all-string-matches "[0-9]*" string))
+(numbers "Phone: 6323003")
+;; => (#("") #("") #("") #("") #("") #("") #("") #("6323003") #(""))
+}
+
+one-more-re-nightmare generates this warning when the @cl{numbers}
+function is submitted. One solution is to replace the @cl{*} repetition
+with @cl{+} repetition.
+
+@lisp-code{
+(defun numbers (string)
+  (one-more-re-nightmare:all-string-matches "[0-9]+" string))
+(numbers "Phone: 6323003")
+;; => (#("6323003"))
+}
+
+}
+
+@subsection{"This expression will only ever match the empty string at
+every position."}
+
+@definition-section["Explanation"]{
+
+The expression will only match at every position, and all matches will
+have zero length.
+
+}
+
+@definition-section["Examples"]{
+
+Using the empty string as a regular expression generates this warning.
+Other regular expressions which are not just the empty string can still
+generate this warning; @cl{|b&c} will generate this warning, as the
+regular expression still can only match the empty string.
 
 }
 

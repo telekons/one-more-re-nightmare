@@ -20,11 +20,18 @@
 (defvar *next-group*)
 (defun next-group ()
   (incf *next-group*))
+(defvar *group-strings*)
 
 (defun parse-regular-expression (string)
-  (let ((*next-group* 0))
+  (let ((*next-group* 0)
+        (*group-strings* (make-hash-table)))
     (values (esrap:parse 'top-level string)
-            *next-group*)))
+            *next-group*
+            (coerce (cons string
+                          (loop for group from 1 to *next-group*
+                                for (s . e) = (gethash group *group-strings*)
+                                collect (subseq string s e)))
+                    'vector))))
 
 ;;; Parens
 (esrap:defrule parens
@@ -35,11 +42,13 @@
 
 (esrap:defrule match-group
     (and "«" expression "»")
-  (:around ()
+  (:around (esrap:&bounds start end)
     (let ((group-number (next-group)))
       (destructuring-bind (left expressions right)
           (esrap:call-transform)
         (declare (ignore left right))
+        (setf (gethash group-number *group-strings*)
+              (cons start end))
         (group expressions group-number)))))
 
 ;;; Binary operators
