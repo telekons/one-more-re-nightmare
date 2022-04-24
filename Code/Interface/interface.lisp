@@ -23,19 +23,20 @@
          (,size (cdr ,code)))
      ,@body))
 
-(defun constant-safe-to-eval-p (form)
-  (trivia:match form
-    ((or (type string) (type symbol) (list 'quote (type string))) t)
-    (_ nil)))
-
-(defun try-to-evaluate-constant-re (form)
-  (if (and (constantp form)
-           (constant-safe-to-eval-p form))
-      (let ((result (eval form)))
-        (if (stringp result)
-            result
-            nil))
-      nil))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun constant-safe-to-eval-p (form)
+    (trivia:match form
+      ((or (type string) (type symbol) (list 'quote (type string))) t)
+      (_ nil)))
+  
+  (defun try-to-evaluate-constant-re (form)
+    (if (and (constantp form)
+             (constant-safe-to-eval-p form))
+        (let ((result (eval form)))
+          (if (stringp result)
+              result
+              nil))
+        nil)))
 
 (defmacro with-code-for-vector ((function size vector regular-expression bailout-form) &body body)
   (alexandria:with-gensyms (result)
