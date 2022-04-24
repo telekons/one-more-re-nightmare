@@ -7,3 +7,5 @@ Documentation/*.out
 Documentation/*.pdf
 Documentation/*.toc
 Documentation/one-more-re-nightmare.tex
+Documentation/katex/*
+Documentation/one-more-re-nightmare/*

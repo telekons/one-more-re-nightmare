@@ -40,9 +40,7 @@ For example, the expression @cl{ab&cd|ef} is equivalent to
 
 Note that one-more-re-nightmare can avoid a cache lookup (involving
 acquiring a lock and hash table searching) if the regular expression
-is a literal string.  @todo{We could handle the case where the string
-is in some constant, e.g. @cl{(defconstant +number+ "[0-9]+")
-(all-matches +number+ text)} surely.}
+is a literal string, or a constant variable bound to a string.
 
 @definitions{
 @defun["first-match"]{regular-expression string @param{@&key start end}}

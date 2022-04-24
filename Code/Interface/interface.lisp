@@ -23,28 +23,44 @@
          (,size (cdr ,code)))
      ,@body))
 
+(defun constant-safe-to-eval-p (form)
+  (trivia:match form
+    ((or (type string) (type symbol) (list 'quote (type string))) t)
+    (_ nil)))
+
+(defun try-to-evaluate-constant-re (form)
+  (if (and (constantp form)
+           (constant-safe-to-eval-p form))
+      (let ((result (eval form)))
+        (if (stringp result)
+            result
+            nil))
+      nil))
+
 (defmacro with-code-for-vector ((function size vector regular-expression bailout-form) &body body)
-  `(cond
-     ((stringp ,regular-expression)
-      (handler-case
-          (lint-regular-expression ,regular-expression)
-        (error (e)
-          (warn "Error while linting:~%~a" e)
+  (alexandria:with-gensyms (result)
+    `(let ((,result (try-to-evaluate-constant-re ,regular-expression)))
+       (cond
+         ((null ,result)
           ,bailout-form)
-        (:no-error (&rest values)
-          (declare (ignore values))
-          (alexandria:once-only (,vector)
-            (alexandria:with-gensyms (,function ,size)
-              `(let ((,,size ,(match-vector-size (re-groups regular-expression)))
-                     (,,function
-                       (cond
-                         ,@(loop for string-type in *string-types*
-                                 collect `((typep ,,vector ',string-type)
-                                           (load-time-value (car (find-code ,,regular-expression ',string-type)))))
-                         (t (car (find-code ,,regular-expression (string-type-of ,,vector)))))))
-                 ,(progn ,@body)))))))
-     (t
-      ,bailout-form)))
+         (t
+          (handler-case
+              (lint-regular-expression ,result)
+            (error (e)
+              (warn "Error while linting:~%~a" e)
+              ,bailout-form)
+            (:no-error (&rest values)
+              (declare (ignore values))
+              (alexandria:once-only (,vector)
+                (alexandria:with-gensyms (,function ,size)
+                  `(let ((,,size ,(match-vector-size (re-groups ,result)))
+                         (,,function
+                           (cond
+                             ,@(loop for string-type in *string-types*
+                                     collect `((typep ,,vector ',string-type)
+                                               (load-time-value (car (find-code ,,result ',string-type)))))
+                             (t (car (find-code ,,result (string-type-of ,,vector)))))))
+                     ,(progn ,@body)))))))))))
 
 (declaim (inline %all-matches)
          (ftype (function * list) %all-matches all-matches))
@@ -126,7 +142,7 @@
 
 (defun first-match (regular-expression vector
                     &key (start 0) (end (length vector)))
-"Returns the start, end positions and submatches of the first match, or NIL, NIL and NIL"
+  "Returns the start, end positions and submatches of the first match, or NIL, NIL and NIL"
   (with-code ((function size)
               (find-code regular-expression (string-type-of vector)))
     (%first-match function size vector start end)))
