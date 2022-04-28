@@ -80,7 +80,7 @@
 
 (defun all-matches (regular-expression vector
                     &key (start 0) (end (length vector)))
-  "Returns a list of match vectors of every match"
+  "Find every match, as a list of match vectors."
   (with-code ((function size)
               (find-code regular-expression (string-type-of vector)))
     (%all-matches function size vector start end)))
@@ -112,6 +112,7 @@
 
 (defun all-string-matches (regular-expression vector
                            &key (start 0) (end (length vector)))
+  "Find every match, as a list of match string vectors."
   (mapcar (lambda (match) (subsequences vector match))
           (all-matches regular-expression
                        vector
@@ -143,7 +144,7 @@
 
 (defun first-match (regular-expression vector
                     &key (start 0) (end (length vector)))
-  "Returns the start, end positions and submatches of the first match, or NIL, NIL and NIL"
+  "Find the first match, returning a match vector, or NIL."
   (with-code ((function size)
               (find-code regular-expression (string-type-of vector)))
     (%first-match function size vector start end)))
@@ -156,7 +157,7 @@
 
 (defun first-string-match (regular-expression vector
                            &key (start 0) (end (length vector)))
-  "Returns the first match or NIL"
+  "Find the first match, returning a match string vector or NIL"
   (let ((results (first-match regular-expression vector
                               :start start :end end)))
     (if (null results)
@@ -174,6 +175,7 @@
 (defmacro do-matches (((&rest registers) regular-expression vector
                        &key (start 0) (end nil))
                       &body body)
+  "Iterate over every match, binding match registers."
   (alexandria:with-gensyms (function size match-vector)
     (alexandria:once-only (start end vector)
       (labels ((consume (function size known-register-count)
