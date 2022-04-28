@@ -9,6 +9,10 @@ finite state machine, which involves traversing every execution path
 of the machine, so it can perform analysis with no false positives or
 negatives.
 
+@definitions{
+@define-condition["lint-style-warning" "style-warning"]
+}
+
 Linting occurs when regular expressions are provided as literal
 strings in the source code. All @term{style warnings} generated are of the
 type @cl{lint-style-warning}.
@@ -16,7 +20,7 @@ type @cl{lint-style-warning}.
 @section{Unreachability}
 
 @definitions{
-@define-condition["not-matchable-style-warning" "style-warning"]
+@define-condition["not-matchable-style-warning" "lint-style-warning"]
 }
 
 The following issues generate @term{style warnings} at
@@ -70,7 +74,7 @@ are simultaneously @cl{b} and @cl{c}.
 @section{Matching too much}
 
 @definitions{
-@define-condition["matching-too-much-style-warning" "style-warning"]
+@define-condition["matching-too-much-style-warning" "lint-style-warning"]
 }
 
 Some regular expressions may match at every position, which is usually
