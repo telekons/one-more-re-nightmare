@@ -8,6 +8,7 @@
           defthing defun defmacro defgeneric defmethod
           defaccessor defreader definitarg
           defclass defprotoclass defvar
+          define-condition
           cl lisp-code
           param &keyword &key &optional &rest &allow-other-keys &body
           term concept
@@ -103,14 +104,19 @@
               ([x (in-list l)])
        (list* x v a))))
 
+@(define (superclass-part superclasses)
+   (if (or (equal? superclasses "")
+           (equal? superclasses '())
+           (equal? superclasses '("")))
+       ""
+       (interleave " " (cons "<:" superclasses))))
+
 @(define (defclass name . superclasses)
-   (defthing name
-             (if (or (equal? superclasses "")
-                     (equal? superclasses '())
-                     (equal? superclasses '("")))
-                 ""
-                 (interleave " " (cons "<:" superclasses)))
-             "Class"))
+   (defthing name (superclass-part superclasses) "Class"))
+
+@(define (define-condition name . supertypes)
+   (def-function-thing name (superclass-part supertypes) "Condition Type"))
+
 @(define (defprotoclass name)
    (defthing name "" "Protocol Class"))
 

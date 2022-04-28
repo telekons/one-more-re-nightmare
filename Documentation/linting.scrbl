@@ -15,6 +15,10 @@ type @cl{lint-style-warning}.
 
 @section{Unreachability}
 
+@definitions{
+@define-condition["not-matchable-style-warning" "style-warning"]
+}
+
 The following issues generate @term{style warnings} at
 compile-time, of type @cl{not-matchable-style-warning}. They do not
 indicate that something will go wrong at run-time, but their behaviour
@@ -64,6 +68,10 @@ are simultaneously @cl{b} and @cl{c}.
 }
 
 @section{Matching too much}
+
+@definitions{
+@define-condition["matching-too-much-style-warning" "style-warning"]
+}
 
 Some regular expressions may match at every position, which is usually
 a sign of a mistake, as one usually wants to extract something from a
