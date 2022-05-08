@@ -133,7 +133,9 @@ global lock currently.)
 @definitions{
 @defclass["compiled-regular-expression"]
 
-An object representing a compiled regular expression.
+An object representing a compiled regular expression. An instance of
+this class can be provided as a regular expression to all the searching
+functions, instead of a string.
 }
 
 @definitions{
