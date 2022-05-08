@@ -44,7 +44,7 @@
   (let ((success t))
     (lparallel:pdotimes (i n success n)
       (let* ((*remaining-depth* depth)
-             (one-more-re-nightmare::*code-type* :interpreted)
+             #+sbcl (one-more-re-nightmare::*code-type* :interpreted)
              (re (random-re))
              (haystack (random-haystack)))
         (handler-case
