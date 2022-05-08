@@ -1,6 +1,6 @@
 (defpackage :one-more-re-nightmare
   (:use :cl)
-  (:export #:compile-regular-expression
+  (:export #:compile-regular-expression #:compiled-regular-expression
            #:all-matches #:all-string-matches
            #:first-match #:first-string-match
            #:do-matches

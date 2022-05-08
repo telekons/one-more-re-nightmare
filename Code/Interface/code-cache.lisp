@@ -5,17 +5,40 @@
 (defvar *code-lock*
   (bt:make-lock "Compiled code cache lock"))
 
+(defstruct (compiled-regular-expression (:conc-name cre-))
+  (codes (alexandria:required-argument) :type simple-vector)
+  original-re)
+
+(defun compile-regular-expression (expression)
+  (make-compiled-regular-expression
+   :codes (coerce
+           (loop for type in *string-types*
+                 collect (find-code expression type))
+           'vector)
+   :original-re expression))
+
+(defmethod print-object ((cre compiled-regular-expression) stream)
+  (print-unreadable-object (cre stream :type t)
+    (write-string (cre-original-re cre) stream)))
+
 (defvar *string-types*
   (alexandria:map-product #'list
                           '(simple-array array)
                           '(character base-char)
                           '(1)))
 
-(defun match-vector-size (groups)
-  (declare ((unsigned-byte 32) groups))
-  (* 2 (1+ groups)))
+(defvar *type-dispatcher*
+  (compile nil
+           `(lambda (cre type)
+              (cond
+                ,@(loop for type in *string-types*
+                        for index from 0
+                        collect `((eq type ',type) (svref (cre-codes cre) ,index)))))))
 
 (defun find-code (regular-expression type-specifier)
+  (when (compiled-regular-expression-p regular-expression)
+    (return-from find-code
+      (funcall *type-dispatcher* regular-expression type-specifier)))
   (bt:with-lock-held (*code-lock*)
     (multiple-value-bind (code present?)
         (gethash (list regular-expression type-specifier)
@@ -23,14 +46,14 @@
       (when present?
         (return-from find-code code))))
   (multiple-value-bind (function groups)
-      (compile-regular-expression
+      (%compile-regular-expression
        regular-expression
        :layout (make-layout :array-type type-specifier))
     (bt:with-lock-held (*code-lock*)
       (setf (gethash (list (copy-seq regular-expression)
                            type-specifier)
                      *code-cache*)
-            (cons function (match-vector-size groups))))))
+            (cons function groups)))))
 
 (defun string-type-of (string)
   (loop for type in *string-types*

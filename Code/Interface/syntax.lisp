@@ -118,23 +118,29 @@
   (:lambda (list)
     (parse-integer (format nil "~{~A~}" list))))
 
+(esrap:defrule character-range-character
+    (not (or (or "-" "]" "[" "\\"))))
+
 (esrap:defrule character-range-range
-    (and character "-" character)
+    (and character-range-character "-" character-range-character)
   (:destructure (low dash high)
     (declare (ignore dash))
     (symbol-range (char-code low) (1+ (char-code high)))))
 
-(esrap:defrule character-range-not
-    (and "¬" character)
-  (:destructure (bar character)
-    (declare (ignore bar))
-    (set-inverse (singleton-set (char-code character)))))
+(esrap:defrule character-range-single
+    (or character-range-character escaped-character)
+  (:lambda (character)
+    (singleton-set (char-code character))))
 
 (esrap:defrule character-range
-    (and "[" (or character-range-range character-range-not) "]")
-  (:destructure (left range right)
+    (and "[" (esrap:? "¬")
+         (* (or character-range-range character-range-single))
+         "]")
+  (:destructure (left invert ranges right)
     (declare (ignore left right))
-    (literal range)))
+    (let ((sum (reduce #'set-union ranges
+                       :initial-value +empty-set+)))
+      (literal (if invert (set-inverse sum) sum)))))
 
 (esrap:defrule escaped-character
     (and #\\ character)

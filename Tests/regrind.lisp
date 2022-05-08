@@ -48,14 +48,14 @@
              (re (random-re))
              (haystack (random-haystack)))
         (handler-case
-            (one-more-re-nightmare:compile-regular-expression
+            (one-more-re-nightmare::%compile-regular-expression
              re
              :layout *layout*)
           (error (e)
             (format t "~&Compiling ~s fails with:~&~a" re e)
             (setf success nil))
-          (:no-error (code groups)
-            (let ((result (make-array (one-more-re-nightmare::match-vector-size groups)))
+          (:no-error (code registers)
+            (let ((result (make-array registers))
                   (*start* 0)
                   (*end* (length haystack)))
               (handler-case

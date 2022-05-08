@@ -22,11 +22,13 @@ intersections of regular expressions.
       "E{i}" "repeat"
       "«E»" "submatch"
       "(E)" "change precedence"
-      "[c-c]" "character range"
-      "[¬c]" "complement character"
+      "[r]" "character range"
+      "[¬r]" "complement ranges"
       "$" "every character"
       "c" "literal character"
       "<empty string>" ""]
+@rule["r" "c" "single character"
+         "c-c" "character range"]
 @rule["i" "<integer>" ""]
 @rule["c" "<single character>" ""]
 ]
@@ -118,4 +120,27 @@ across @cl{string}. The @cl{registers} variables are bound to the
 It is possible to provide fewer variables than registers in the
 regular expression, but an error will be signalled if there are more
 variables than registers.
+}
+
+@section{Compiling}
+
+The compiler may be run manually, when the regular expression is not
+known at compile time, and the code cache takes too long to search.
+(The latter can happen if many threads are accessing the code cache,
+and the time taken searching is sufficiently short, as lookups grab a
+global lock currently.)
+
+@definitions{
+@defclass["compiled-regular-expression"]
+
+An object representing a compiled regular expression.
+}
+
+@definitions{
+@defun["compile-regular-expression"]{expression}
+
+Compile a regular expression, returning an instance of
+@cl{compiled-regular-expression}.
+
+An error is signalled if the expression has invalid syntax.
 }

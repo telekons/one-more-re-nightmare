@@ -30,11 +30,14 @@
           (setf (gethash (cons state entry-point) names)
                 (incf (next-state-name *compiler-state*)))))))
 
+(defun match-vector-size (groups)
+  (* 2 (1+ groups)))
+
 (defvar *nowhere* (make-broadcast-stream))
 (defvar *code-type* :compiled)
-(defun compile-regular-expression (expression
-                                   &key (layout *default-layout*)
-                                        (strategy #'make-default-strategy))
+(defun %compile-regular-expression (expression
+                                    &key (layout *default-layout*)
+                                         (strategy #'make-default-strategy))
   (let ((*tag-gensym-counter* 0))
     (with-hash-consing-tables ()
       (multiple-value-bind (expression groups)
@@ -44,7 +47,7 @@
               (strategy (funcall strategy layout expression)))
           (values
            (with-naughty-compiler-switches ()
-             (let ((form (%compile-regular-expression
+             (let ((form (make-lambda-form
                           expression
                           strategy
                           groups)))
@@ -57,13 +60,13 @@
                   (compile nil form))
                  (:literal
                   form))))
-           groups))))))
+           (match-vector-size groups)))))))
 
 (defun variable-map-from-groups (groups)
   (coerce `(start end ,@(alexandria:iota (* groups 2) :start 1))
           'vector))
 
-(defun %compile-regular-expression (expression strategy groups)
+(defun make-lambda-form (expression strategy groups)
   (let* ((*compiler-state*
            (make-instance 'compiler-state
                           :variable-map (variable-map-from-groups groups)))
