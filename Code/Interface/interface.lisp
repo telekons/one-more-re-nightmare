@@ -38,6 +38,23 @@
               nil))
         nil)))
 
+(define-compiler-macro compile-regular-expression (&whole w expression)
+  (let ((re (try-to-evaluate-constant-re expression)))
+    (cond
+      ((null re) w)
+      (t
+       (handler-case
+           (lint-regular-expression re)
+         (error (e)
+           (warn "Error while linting:~%~a" e)
+           w)
+         (:no-error (&rest values)
+           (declare (ignore values))
+           `(make-compiled-regular-expression
+             :codes (vector ,@(loop for type in *string-types*
+                                    collect `(find-code expression ',type)))
+             :original-re ',re)))))))
+
 (defmacro with-code-for-vector ((function size vector regular-expression bailout-form) &body body)
   (alexandria:with-gensyms (result)
     `(let ((,result (try-to-evaluate-constant-re ,regular-expression)))

@@ -52,12 +52,12 @@ is a literal string, or a constant variable bound to a string.
 Find the first match for @cl{regular-expression} in @cl{string}
 between @cl{start} and @cl{end}.
 
-@cl{first-match} either returns a simple vector, where each element is
-a @concept{register}. The first two registers are always the start and end
-of the match, and then subsequent registers are the start and end of
-each submatch. A register is either a bounding index of
-@cl{string} or @cl{nil} (when there is no submatch), or @cl{nil} if
-there is no match.
+@cl{first-match} returns a simple vector, where each element is a
+@concept{register}, or @cl{nil} when there is no match. The first two
+registers are always the start and end of the match, and then
+subsequent registers are the start and end of each submatch. A
+register is either a bounding index of @cl{string} or @cl{nil} when
+there is no submatch.
 
 @cl{first-string-match} either returns a simple vector, every element
 of which is a fresh string or @cl{nil} (when there is no submatch), or
