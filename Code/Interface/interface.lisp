@@ -52,7 +52,7 @@
            (declare (ignore values))
            `(make-compiled-regular-expression
              :codes (vector ,@(loop for type in *string-types*
-                                    collect `(find-code expression ',type)))
+                                    collect `(find-code ,re ',type)))
              :original-re ',re)))))))
 
 (defmacro with-code-for-vector ((function size vector regular-expression bailout-form) &body body)
