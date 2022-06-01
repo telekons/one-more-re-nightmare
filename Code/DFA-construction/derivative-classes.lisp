@@ -29,7 +29,7 @@
            (grep r s))
        (merge-sets (derivative-classes r)
                    (derivative-classes s)))
-      ((or (kleene r) (invert r))
+      ((or (invert r) (repeat r _ _ _))
        (derivative-classes r))
       ((alpha r _)
        (derivative-classes r)))))

@@ -69,13 +69,6 @@
   (:destructure (e1 e2) (join e1 e2)))
 
 ;;; Repeats
-(defun empty-match (expression)
-  (trivia:ematch (nullable expression)
-    ((empty-set) (empty-set))
-    ((empty-string) (empty-string))
-    ((tag-set s) (tag-set (loop for (s . nil) in (unique-assignments s)
-                                collect (cons s 'position))))))
-
 (defun clear-registers (expression)
   (join (tag-set
          (loop for ((v nil) . nil) in (tags expression)
@@ -86,21 +79,33 @@
     (and below-join "*")
   (:destructure (expression star)
     (declare (ignore star))
-    (either (empty-match expression)
-            (kleene (clear-registers expression)))))
+    (repeat (clear-registers expression) 0 nil t)))
 
 (esrap:defrule plus
     (and below-join "+")
   (:destructure (expression plus)
     (declare (ignore plus))
-    (join expression (either (empty-match expression) (kleene (clear-registers expression))))))
+    (repeat (clear-registers expression) 1 nil t)))
+
+(esrap:defrule repetitions
+    (and (esrap:? integer) "," (esrap:? integer))
+  (:destructure (min comma max)
+    (declare (ignore comma))
+    (assert (or (null max) (null min) (> max min))
+            (max min)
+            "The maximum repetition count should not be less than the minimum ~
+number; the maximum of ~d is less than the minimum of ~d." max min)
+    (cons (or min 0) max)))
+
+(esrap:defrule repetition
+    integer
+  (:lambda (count) (cons count count)))
 
 (esrap:defrule repeated
-    (and below-join "{" integer "}")
-  (:destructure (e left count right)
+    (and below-join "{" (or repetitions repetition) "}")
+  (:destructure (e left counts right)
     (declare (ignore left right))
-    (reduce #'join (make-array count :initial-element (clear-registers e))
-            :key #'unique-tags)))
+    (repeat e (car counts) (cdr counts) t)))
 
 (esrap:defrule invert
     (and (or "¬" "~") below-join)

@@ -7,7 +7,8 @@
 (defun generate-dot-for-expression (expression)
   (uiop:with-temporary-file (:pathname p :stream s :keep t :type "dot")
     (with-hash-consing-tables ()
-      (let* ((initial-state
+      (let* ((*tag-gensym-counter* 0)
+             (initial-state
                (make-search-machine (parse-regular-expression expression)))
              (dfa (make-dfa-from-expression initial-state)))
         (print-dfa dfa initial-state s)))

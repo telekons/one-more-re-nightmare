@@ -24,8 +24,12 @@
             (either (join r* s) (join (nullable r) s*)))
            (t
             (either (join r* (unique-tags s)) (join (nullable r) s*))))))
-      ((kleene r)
-       (join (derivative r set) (kleene (unique-tags r))))
+      ((repeat r min max _)
+       (join (derivative r set)
+             (repeat (unique-tags r)
+               (max (1- min) 0)
+               (if (null max) nil (1- max))
+               nil)))
       ((either r s)
        (either (derivative r set) (derivative s set)))
       ((both r s)
@@ -49,34 +53,39 @@
          (alpha r*
                 (either nullable old-tags)))))))
 
-(defun derivative* (re sequence)
+(defun derivative* (re sequence &key search)
   (let ((variables (make-hash-table :test 'equal))
-        (position 0))
-    (flet ((run-effects (effects)
-             (loop for (target . source) in effects
-                   for value = (case source
-                                 ((position) position)
-                                 ((nil) 'nil)
-                                 (otherwise (gethash source variables :unbound)))
-                   do (setf (gethash target variables) value))))
-      (map 'nil
-           (lambda (element)
-             (let* ((new-re (derivative re (symbol-set (char-code element))))
-                    (effects (remove-if (lambda (x) (equal (car x) (cdr x)))
-                                        (effects re))))
-               (format t "~&~a~&  ~:c ~a"
-                       re element effects)
-               (setf re new-re)
-               (run-effects effects)
-               (incf position)))
-           sequence)
-      (run-effects (effects re))
-      (values re
-              (trivia:match (nullable re)
-                ((tag-set s)
-                 (loop for ((name nil) . source) in s
-                       unless (null (gethash source variables))
-                       collect (cons name (gethash source variables))))
-                ((empty-string) '())
-                ((empty-set) '()))
-              (nullable re)))))
+        (position 0)
+        (*tag-gensym-counter* 0))
+    (with-hash-consing-tables ()
+      (when (stringp re) (setf re (parse-regular-expression re)))
+      (when search (setf re (make-search-machine re)))
+      (flet ((run-effects (effects)
+               (loop for (target . source) in effects
+                     for value = (case source
+                                   ((position) position)
+                                   ((nil) 'nil)
+                                   (otherwise (gethash source variables :unbound)))
+                     do (setf (gethash target variables) value))))
+        (map 'nil
+             (lambda (element)
+               (let* ((new-re (derivative re (symbol-set (char-code element))))
+                      (effects (remove-if (lambda (x) (equal (car x) (cdr x)))
+                                          (effects re))))
+                 (format t "~&~a~&  ~:c ~a"
+                         re element effects)
+                 (setf re new-re)
+                 (run-effects effects)
+                 (incf position)))
+             sequence)
+        (run-effects (effects re))
+        (format t "~&~a" (alexandria:hash-table-alist variables))
+        (values re
+                (trivia:match (nullable re)
+                  ((tag-set s)
+                   (loop for ((name nil) . source) in s
+                         unless (null (gethash source variables))
+                           collect (cons name (gethash source variables))))
+                  ((empty-string) '())
+                  ((empty-set) '()))
+                (nullable re))))))

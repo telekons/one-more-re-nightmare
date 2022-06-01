@@ -185,7 +185,8 @@ resulting set iff
                (cond ((null xs) default)
                      ;; Check for a singleton set.
                      ((and (= 4 (length xs))
-                           (= (1+ (first xs)) (third xs)))
+                           (= (1+ (first xs)) (third xs))
+                           (eq (fourth xs) default))
                       (cons-if `(,equal ,var ,(first xs)) (second xs) (fourth xs)))
                      ((= 2 (length xs))
                       (cons-if `(,less-than ,var ,(first xs)) default (second xs)))

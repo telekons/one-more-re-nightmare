@@ -6,6 +6,8 @@
    (and (has-literals-p r) (has-literals-p s)))
   ((or (join r s) (both r s))
    (or (has-literals-p r) (has-literals-p s)))
+  ((repeat r min _ _)
+   (and (has-literals-p r) (plusp min)))
   ((invert r) (not (has-literals-p r)))
   (_ nil))
 
@@ -20,7 +22,7 @@
    (union (effects r) (effects s)
           :test #'equal))
   ((invert r) (effects r))
-  ((kleene r) (effects r))
+  ((repeat r _ _ _) (effects r))
   ((alpha e _) (effects e))
   ((grep v _) (effects v))
   (_ '()))

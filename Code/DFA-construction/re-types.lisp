@@ -3,7 +3,7 @@
 (define-types
   (literal set)
   (empty-string)
-  (kleene r)
+  (repeat r min max can-empty)
   (tag-set substitutions)
   (alpha expression history)
   (grep vector prototype)
@@ -16,14 +16,20 @@
   :printer ((literal set)
             (print-isum set stream)))
 
+(defun kleene (r)
+  (repeat r 0 nil nil))
+(trivia:defpattern kleene (r)
+  `(repeat ,r 0 nil nil))
+
 (defun empty-set ()
   (literal (symbol-set)))
-(defun universal-set ()
-  (kleene (literal (set-inverse (symbol-set)))))
 (trivia:defpattern empty-set ()
   (alexandria:with-gensyms (set)
     `(trivia:guard (literal ,set)
                    (set-null ,set))))
+
+(defun universal-set ()
+  (repeat (literal +universal-set+) 0 nil nil))
 (trivia:defpattern universal-set ()
   `(kleene (literal ',+universal-set+)))
 
@@ -36,11 +42,18 @@
 
 (define-rewrites (empty-string)
   :printer (_ (write-string "ε" stream)))
-(define-rewrites (kleene r)
-  :simplify (((kleene (kleene r)) (kleene r))
-             ((kleene (empty-set)) (empty-string)))
-  :printer ((kleene r)
-            (format stream "[~a]*" r)))
+
+(define-rewrites (repeat r min max can-empty)
+  :simplify (((repeat _ _ 0 _) (empty-string))
+             ((repeat r 1 1 _) r)
+             ((repeat (empty-set) 0 nil _) (empty-string))
+             ((repeat (repeat r 0 nil _) 0 nil c)
+              (repeat r 0 nil c)))
+  :printer ((repeat r min max can-empty)
+            (format stream "[~a]{~a~a,~a}"
+                    r (if can-empty "^" "")
+                    min
+                    (or max ""))))
 
 (define-rewrites (tag-set substitutions)
   :simplify (((tag-set (list))

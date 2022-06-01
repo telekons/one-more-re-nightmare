@@ -193,7 +193,7 @@
               (setf start (max (1+ start)
                                (1- ,(find-in-map 'end (state-exit-map next-state)))))
               #+print-traces
-              (print `(:next ,start))
+              (print `(:next ,start ,,(prin1-to-string next-expression)))
               (win ,@(win-locations (state-exit-map next-state))))))
       ((re-empty-p next-expression)
        `(progn
