@@ -13,7 +13,7 @@
     (or join below-join))
 (esrap:defrule below-join
     (or invert
-        kleene plus repeated
+        kleene plus maybe repeated
         parens match-group character-range universal-set
         literal empty-string))
 
@@ -87,6 +87,12 @@
     (declare (ignore plus))
     (repeat (clear-registers expression) 1 nil t)))
 
+(esrap:defrule maybe
+    (and below-join "?")
+  (:destructure (expression q)
+    (declare (ignore q))
+    (repeat expression 0 1 t)))
+
 (esrap:defrule repetitions
     (and (esrap:? integer) "," (esrap:? integer))
   (:destructure (min comma max)
@@ -154,7 +160,7 @@ number; the maximum of ~d is less than the minimum of ~d." max min)
     char))
 
 (esrap:defrule special-character
-    (or "(" ")" "«" "»" "[" "]" "{" "}" "¬" "~" "|" "&" "*" "$" "+"))
+    (or "(" ")" "«" "»" "[" "]" "{" "}" "¬" "~" "|" "&" "*" "+" "?" "$"))
 
 (esrap:defrule literal
     (or escaped-character (not special-character))
