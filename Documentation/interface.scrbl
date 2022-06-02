@@ -1,5 +1,5 @@
 #lang scribble/base
-@require["spec-macros.scrbl"]
+@require["spec-macros.scrbl" "bibliography.rkt"]
 
 @title{Interface}
 
@@ -19,17 +19,20 @@ intersections of regular expressions.
       "~E" "complement"
       "E*" "zero or more repeats"
       "E+" "one or more repeats"
-      "E{i}" "repeat"
+      "E?" "zero or one repeats"
+      "E{j,j}" "repeat"
       "«E»" "submatch"
       "(E)" "change precedence"
-      "[r]" "character range"
+      "[r+]" "character range"
       "[¬r]" "complement ranges"
       "$" "every character"
       "c" "literal character"
       "<empty string>" ""]
 @rule["r" "c" "single character"
-         "c-c" "character range"]
+          "c-c" "character range"]
 @rule["i" "<integer>" ""]
+@rule["j" "<integer>" "bound"
+          "<empty string>" "no bound"]
 @rule["c" "<single character>" ""]
 ]
 ]
@@ -37,6 +40,27 @@ intersections of regular expressions.
 Rules higher on this list are "looser" than rules lower on the list.
 For example, the expression @cl{ab&cd|ef} is equivalent to
 @cl{((ab)&(cd))|(ef)}.
+
+@section{Semantics}
+
+Matches and submatches are performed using the semantics for 
+POSIX regular expressions @~cite[posix], with additional rules pertaining
+to intersection and complements.
+
+Submatches on both sides of an intersection operator are matched. For
+example,
+
+@lisp-code{
+(first-string-match "«a»b&a«b»" "ab") ; => #("ab" "a" "b")
+}
+
+No submatches in a complement can ever be matched, including in the
+complement of a complement. Thus @cl{¬¬A} is not the same as @cl{A}:
+
+@lisp-code{
+(first-match "¬¬«a»" "a") ; => #(0 1 NIL NIL)
+(first-match "«a»" "a") ; => #(0 1 0 1)
+}
 
 @section{Matching}
 

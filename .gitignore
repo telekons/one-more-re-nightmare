@@ -6,6 +6,8 @@ Documentation/*.log
 Documentation/*.out
 Documentation/*.pdf
 Documentation/*.toc
+Documentation/*.ilg
+Documentation/*.ind
 Documentation/one-more-re-nightmare.tex
 Documentation/katex/*
 Documentation/one-more-re-nightmare/*

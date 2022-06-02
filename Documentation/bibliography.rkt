@@ -3,7 +3,7 @@
 (require scriblib/autobib)
 (provide generate-bibliography ~cite
          derivatives apl3000 derivatives-reexamined
-         rte petalisp cox)
+         rte petalisp cox posix)
 
 (define-cite ~cite citet generate-bibliography)
 
@@ -50,3 +50,9 @@
   "Russ Cox"
   2009
   #:url "https://swtch.com/~rsc/regexp/regexp2.html")
+
+(define-bib posix
+  "Regular expressions"
+  "IEEE"
+  2018
+  #:url "https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap09.html")
