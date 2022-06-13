@@ -184,7 +184,7 @@
        (if (eq (nullable (state-expression previous-state)) (empty-set))
            `(progn
               (setf start (1+ start))
-              (go start))
+              (restart))
            ;; Similarly to hitting EOF, if this state is nullable then
            ;; we can succeed with what we got.
            `(progn
