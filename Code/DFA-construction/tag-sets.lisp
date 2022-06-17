@@ -62,16 +62,6 @@
         for (target . nil) = assignment
         when (member target used :test #'equal)
           collect assignment))
-
-(defun new-tags (new-re old-re)
-  (let* ((*gensym-assignments?* nil))
-    (trivia:ematch (nullable old-re)
-      ((tag-set s) (keep-used-assignments new-re s))
-      ((empty-string) '())
-      ((empty-set)
-       (let ((assignments (set-difference (tags old-re) (tags new-re)
-                                          :test #'equal)))
-         (keep-used-assignments new-re assignments))))))
  
 (defun remove-tags (re)
   (with-slot-consing (cached-removed-tags re)
