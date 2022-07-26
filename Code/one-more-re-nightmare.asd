@@ -19,7 +19,8 @@
                              (:file "effects")
                              (:file "similar")
                              (:file "tag-sets")
-                             (:file "make-dfa")))
+                             (:file "make-dfa")
+                             (:file "minimize")))
                (:module "Compiler"
                 :components ((:file "layout")
                              (:file "compilation-strategy")
