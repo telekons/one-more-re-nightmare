@@ -107,7 +107,7 @@
   "Find every match, as a list of match vectors."
   (with-code ((function size)
               (find-code regular-expression (string-type-of vector)))
-    (%all-matches function size vector start end)))
+    (%all-matches function size vector start (or end (length vector)))))
 
 (define-compiler-macro all-matches (&whole w
                                     regular-expression vector
@@ -116,7 +116,7 @@
   ;; Grab code at load-time if possible.
   (with-code-for-vector (function size vector regular-expression w)
     `(%all-matches ,function ,size ,vector
-                   ,start ,(if end-p end `(length ,vector)))))
+                   ,start ,(if end-p `(or ,end (length ,vector)) `(length ,vector)))))
 
 (declaim (inline subsequences))
 (defun subsequences (vector match-vector)
@@ -152,7 +152,7 @@
   (with-code-for-vector (function size vector regular-expression w)
     `(mapcar (lambda (match) (subsequences ,vector match))
              (%all-matches ,function ,size ,vector
-                           ,start ,(if end-p end `(length ,vector))))))
+                           ,start ,(if end-p `(or ,end nil) `(length ,vector))))))
 
 (declaim (inline %first-match))
 (defun %first-match (function size vector start end)
@@ -179,13 +179,14 @@
   "Find the first match, returning a match vector, or NIL."
   (with-code ((function size)
               (find-code regular-expression (string-type-of vector)))
-    (%first-match function size vector start end)))
+    (%first-match function size vector start (or end (length vector)))))
 
 (define-compiler-macro first-match (&whole w
                                     regular-expression vector
                                     &key (start 0) (end nil end-p))
   (with-code-for-vector (function size vector regular-expression w)
-    `(%first-match ,function ,size ,vector ,start ,(if end-p end `(length ,vector)))))
+    `(%first-match ,function ,size ,vector ,start
+                   ,(if end-p `(or ,end nil) `(length ,vector)))))
 
 (defun first-string-match (regular-expression vector
                            &key (start 0) (end (length vector)))
@@ -201,8 +202,8 @@
                                            &key (start 0) (end nil end-p))
   (with-code-for-vector (function size vector regular-expression w)
     `(subsequences ,vector
-                   (%first-match ,function ,size ,vector
-                                 ,start ,(if end-p end `(length ,vector))))))
+                   (%first-match ,function ,size ,vector ,start
+                                 ,(if end-p `(or ,end (length ,vector)) `(length ,vector))))))
 
 (defmacro do-matches (((&rest registers) regular-expression vector
                        &key (start 0) (end nil))
