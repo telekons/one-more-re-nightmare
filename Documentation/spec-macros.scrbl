@@ -69,7 +69,7 @@
    (list (linebreak)
          (sc name)
          (linebreak)
-         (indent things)))
+         things))
 
 @(define (definitions . stuff)
    (nested #:style definitions-style
@@ -97,7 +97,7 @@
    (def-function-thing name arguments "Reader"))
 @(define (definitarg name)
    (defthing name "" "Initarg"))
-
+   
 @(define (interleave v l)
    (reverse
     (for/fold ([a '()])

@@ -95,6 +95,13 @@
                (lambda ()
                  (result (copy-seq match)))))))
 
+(declaim (ftype (function
+                 (re-designator string
+                  &key (:start alexandria:array-index)
+                       (:end (or alexandria:array-length null)))
+                 list)
+                all-matches all-string-matches))
+
 (defun all-matches (regular-expression vector
                     &key (start 0) (end (length vector)))
   "Find every match, as a list of match vectors."
@@ -158,6 +165,13 @@
              (lambda ()
                (return-from %first-match tag-vector)))
     nil))
+
+(declaim (ftype (function
+                 (re-designator string
+                  &key (:start alexandria:array-index)
+                       (:end (or alexandria:array-length null)))
+                 (or null simple-vector))
+                first-match first-string-match))
 
 (defun first-match (regular-expression vector
                     &key (start 0) (end (length vector)))

@@ -8,6 +8,8 @@
 (defstruct (compiled-regular-expression (:conc-name cre-))
   (codes (alexandria:required-argument) :type simple-vector)
   original-re)
+(deftype re-designator ()
+  `(or compiled-regular-expression string))
 
 (defun compile-regular-expression (expression)
   (make-compiled-regular-expression
@@ -55,6 +57,7 @@
                      *code-cache*)
             (cons function groups)))))
 
+(declaim (ftype (function (string) t) string-type-of))
 (defun string-type-of (string)
   (loop for type in *string-types*
         when (typep string type)
