@@ -81,7 +81,7 @@
                      ,(progn ,@body)))))))))))
 
 (declaim (inline %all-matches)
-         (ftype (function * list) %all-matches all-matches))
+         (ftype (function * list) %all-matches))
 (defun %all-matches (function size vector start end)
   (declare (alexandria:array-index start end)
            (function function)
@@ -118,6 +118,7 @@
     `(%all-matches ,function ,size ,vector
                    ,start ,(if end-p end `(length ,vector)))))
 
+(declaim (inline subsequences))
 (defun subsequences (vector match-vector)
   (declare (simple-vector match-vector)
            (vector vector)
