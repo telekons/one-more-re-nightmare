@@ -11,6 +11,12 @@
 (deftype re-designator ()
   `(or compiled-regular-expression string))
 
+(defvar *string-types*
+  (alexandria:map-product #'list
+                          '(simple-array array)
+                          '(character base-char)
+                          '(1)))
+
 (defun compile-regular-expression (expression)
   (make-compiled-regular-expression
    :codes (coerce
@@ -22,12 +28,6 @@
 (defmethod print-object ((cre compiled-regular-expression) stream)
   (print-unreadable-object (cre stream :type t)
     (write-string (cre-original-re cre) stream)))
-
-(defvar *string-types*
-  (alexandria:map-product #'list
-                          '(simple-array array)
-                          '(character base-char)
-                          '(1)))
 
 (defvar *type-dispatcher*
   (compile nil
