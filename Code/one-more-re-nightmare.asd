@@ -13,12 +13,12 @@
                              (:file "sets")
                              (:file "re-types")
                              (:file "nullable")
+                             (:file "tag-sets")
                              (:file "derivative")
                              (:file "derivative-classes")
                              (:file "empty")
                              (:file "effects")
                              (:file "similar")
-                             (:file "tag-sets")
                              (:file "make-dfa")))
                (:module "Compiler"
                 :components ((:file "layout")
