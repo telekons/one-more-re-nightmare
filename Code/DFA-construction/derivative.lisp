@@ -8,7 +8,7 @@
     (trivia:ematch re
       ((or (empty-string) (empty-set) (tag-set _)) (empty-set))
       ((literal matching-set)
-       (if (set-null (set-intersection matching-set set))
+       (if (csum-null-p (csum-intersection matching-set set))
            (empty-set)
            (empty-string)))
       ((join r s)
@@ -69,7 +69,7 @@
                      do (setf (gethash target variables) value))))
         (map 'nil
              (lambda (element)
-               (let* ((new-re (derivative re (symbol-set (char-code element))))
+               (let* ((new-re (derivative re (singleton-set (char-code element))))
                       (effects (remove-if (lambda (x) (equal (car x) (cdr x)))
                                           (effects re))))
                  (format t "~&~a~&  ~:c ~a"

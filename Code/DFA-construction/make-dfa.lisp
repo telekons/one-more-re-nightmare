@@ -50,8 +50,8 @@
              (state-transitions last-state)))
       (t
        (setf (transition-class same-transition)
-             (set-union (transition-class same-transition)
-                        class))))))
+             (csum-union (transition-class same-transition)
+                         class))))))
 
 (trivia:defun-match re-stopped-p (re)
   ((alpha (empty-set) _) t)
@@ -104,7 +104,7 @@
             (t
              (let ((classes (derivative-classes expression)))
                (dolist (class classes)
-                 (unless (set-null class)
+                 (unless (csum-null-p class)
                    (let* ((next-expression (derivative expression class))
                           (tags-to-set (keep-used-assignments
                                         next-expression

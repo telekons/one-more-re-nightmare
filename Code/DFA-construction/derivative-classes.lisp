@@ -5,7 +5,7 @@
   (let ((sets (make-hash-table :test 'equal)))
     (loop for set1 in sets1
           do (loop for set2 in sets2
-                   for intersection = (set-intersection set1 set2)
+                   for intersection = (csum-intersection set1 set2)
                    do (setf (gethash intersection sets) t)))
     (alexandria:hash-table-keys sets)))
 
@@ -16,7 +16,7 @@
   "Produce a list of the 'classes' (sets) of characters that compiling the regular expression would have to dispatch on."
   (with-hash-consing (*derivative-classes* re)
     (trivia:ematch re
-      ((literal set)  (list set (set-inverse set)))
+      ((literal set) (list set (csum-complement set)))
       ((or (empty-string)
            (tag-set _))
        (list +universal-set+))

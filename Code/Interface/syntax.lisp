@@ -136,7 +136,7 @@ number; the maximum of ~d is less than the minimum of ~d." max min)
     (and character-range-character "-" character-range-character)
   (:destructure (low dash high)
     (declare (ignore dash))
-    (symbol-range (char-code low) (1+ (char-code high)))))
+    (range (char-code low) (1+ (char-code high)))))
 
 (esrap:defrule character-range-single
     (or character-range-character escaped-character)
@@ -149,9 +149,9 @@ number; the maximum of ~d is less than the minimum of ~d." max min)
          "]")
   (:destructure (left invert ranges right)
     (declare (ignore left right))
-    (let ((sum (reduce #'set-union ranges
+    (let ((sum (reduce #'csum-union ranges
                        :initial-value +empty-set+)))
-      (literal (if invert (set-inverse sum) sum)))))
+      (literal (if invert (csum-complement sum) sum)))))
 
 (esrap:defrule escaped-character
     (and #\\ character)
@@ -164,7 +164,7 @@ number; the maximum of ~d is less than the minimum of ~d." max min)
 
 (esrap:defrule literal
     (or escaped-character (not special-character))
-  (:lambda (character) (literal (symbol-set (char-code character)))))
+  (:lambda (character) (literal (singleton-set (char-code character)))))
 
 (esrap:defrule empty-string
     ""
