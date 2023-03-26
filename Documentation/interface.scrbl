@@ -23,14 +23,16 @@ intersections of regular expressions.
       "E{j,j}" "repeat"
       "«E»" "submatch"
       "(E)" "change precedence"
-      "[r+]" "character range"
+      "[r]" "character range"
       "[¬r]" "complement ranges"
+      "[^r]" "complement ranges"
       "$" "every character"
       "c" "literal character"
       "<empty string>" ""]
-@rule["r" "c" "single character"
-          "c-c" "character range"]
-@rule["i" "<integer>" ""]
+@rule["r" "<empty range>" "empty range"
+          "cr" "single character"
+          "c-cr" "character range"
+          "[:<name>:r]" "character class"]
 @rule["j" "<integer>" "bound"
           "<empty string>" "no bound"]
 @rule["c" "<single character>" ""]

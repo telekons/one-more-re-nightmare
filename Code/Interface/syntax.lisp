@@ -129,39 +129,6 @@ number; the maximum of ~d is less than the minimum of ~d." max min)
   (:lambda (list)
     (parse-integer (format nil "~{~A~}" list))))
 
-(esrap:defrule character-range-name-constituent (not (or ":" "[" "]")))
-
-(esrap:defrule character-range-named
-    (and "[:" (+ character-range-name-constituent) ":]")
-  (:destructure (open characters close)
-    (declare (ignore open close))
-   (named-range (coerce characters 'string))))
-
-(esrap:defrule character-range-character
-    (not (or "-" "]" "[" "\\")))
-
-(esrap:defrule character-range-range
-    (and character-range-character "-" character-range-character)
-  (:destructure (low dash high)
-    (declare (ignore dash))
-    (range (char-code low) (1+ (char-code high)))))
-
-(esrap:defrule character-range-single
-    (or character-range-character escaped-character)
-  (:lambda (character)
-    (singleton-set (char-code character))))
-
-(esrap:defrule character-range
-    (and "[" (esrap:? "¬")
-         (* (or character-range-named
-                character-range-range
-                character-range-single))
-         "]")
-  (:destructure (left invert ranges right)
-    (declare (ignore left right))
-    (let ((sum (reduce #'csum-union ranges
-                       :initial-value +empty-set+)))
-      (literal (if invert (csum-complement sum) sum)))))
 
 (esrap:defrule escaped-character
     (and #\\ character)
@@ -179,3 +146,42 @@ number; the maximum of ~d is less than the minimum of ~d." max min)
 (esrap:defrule empty-string
     ""
   (:constant (empty-string)))
+
+;;; Character ranges
+(esrap:defrule character-range-escaped-constituent
+    (and #\\ (or #\[ #\] #\- #\^ #\¬))
+  (:destructure (backslash char)
+    (declare (ignore backslash))
+    (char char 0)))
+
+(esrap:defrule character-range-name-constituent (not (or ":" "[" "]")))
+
+(esrap:defrule character-range-named
+    (and "[:" (+ character-range-name-constituent) ":]")
+  (:destructure (open characters close)
+    (declare (ignore open close))
+   (named-range (coerce characters 'string))))
+
+(esrap:defrule character-range-single
+    (or character-range-escaped-constituent (not (or "-" "]" "[" "\\")))
+  (:lambda (character)
+    (singleton-set (char-code character))))
+
+(esrap:defrule character-range-range
+    (and character-range-character "-" character-range-character)
+  (:destructure (low dash high)
+    (declare (ignore dash))
+    (range (char-code low) (1+ (char-code high)))))
+
+(esrap:defrule character-range
+    (and "["
+         (esrap:? (or "^" "¬"))
+         (* (or character-range-named
+                character-range-range
+                character-range-single))
+         "]")
+  (:destructure (left invert ranges right)
+    (declare (ignore left right))
+    (let ((sum (reduce #'csum-union ranges
+                       :initial-value +empty-set+)))
+      (literal (if invert (csum-complement sum) sum)))))
