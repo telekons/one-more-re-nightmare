@@ -51,7 +51,7 @@
     ((equal csum +empty-set+) (write-string "[]" stream))
     ((equal csum +universal-set+) (write-string "Σ" stream))
     (t (let ((csum (remove-empty-ranges csum)))
-         (if (alexandria:length= 1 csum)
+         (if (and (alexandria:length= 1 csum) (= (first (first csum)) +universal-class-set+))
              (if (= (1+ (second (first csum))) (third (first csum)))
                  (write-char (code-char (second (first csum))) stream)
                  (format stream "[~c-~c]"
@@ -129,13 +129,14 @@
   (labels ((dispatch-classes (values)
              (if (alexandria:length= 1 values)
                  `(progn ,@(cdar values))
-                 `(let ((result (lookup-class ,var)))
-                    (cond
-                      ,@(loop for (class-set . body) in values
-                              collect `(,(if (= +universal-class-set+ class-set)
-                                             't
-                                             `(logbitp result ,class-set))
-                                        ,@body))))))
+                 (alexandria:with-gensyms (result)
+                   `(let ((,result (lookup-class ,var)))
+                      (cond
+                        ,@(loop for (class-set . body) in values
+                                collect `(,(if (= +universal-class-set+ class-set)
+                                               't
+                                               `(logbitp ,result ,class-set))
+                                          ,@body)))))))
            (singleton-p (range) (= (1+ (first range)) (second range)))
            (middle (list) (butlast (rest list)))
            (dispatch-csums (values ranges)
@@ -185,3 +186,23 @@
                     and collect (if (= (1+ s) e)
                                     `(= ,s ,variable)
                                     `(<= ,s ,variable ,(1- e))))))))
+
+;;; Named sets
+
+(defun named-range (name)
+  (labels ((∪ (&rest rest) (reduce #'csum-union rest))
+           (d (a b) (csum-intersection a (csum-complement b)))
+           (s (&rest rest) (reduce #'csum-union rest :key (alexandria:compose #'singleton-set #'char-code))))
+    (alexandria:eswitch (name :test 'string=)
+      ("alpha" (class-set :alpha))
+      ("alnum" (∪ (class-set :alpha) (class-set :digit)))
+      ("blank" (s #\Space #\Tab))
+      ("cntrl" (∪ (range 0 32) (singleton-set 127)))
+      ("digit" (class-set :digit))
+      ("graph" (csum-complement (∪ (named-range "cntrl") (s #\Space))))
+      ("lower" (class-set :lower))
+      ("print" (∪ (named-range "graph") (s #\Space)))
+      ("punct" (d (named-range "graph") (∪ (class-set :alpha) (class-set :digit))))
+      ("space" (∪ (singleton-set 11) (s #\Space #\Return #\Newline #\Tab)))
+      ("upper" (class-set :upper))
+      ("xdigit" (∪ (class-set "digit") (s #\A #\B #\C #\D #\E #\F #\a #\b #\c #\d #\e #\f))))))

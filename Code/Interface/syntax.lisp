@@ -129,8 +129,16 @@ number; the maximum of ~d is less than the minimum of ~d." max min)
   (:lambda (list)
     (parse-integer (format nil "~{~A~}" list))))
 
+(esrap:defrule character-range-name-constituent (not (or ":" "[" "]")))
+
+(esrap:defrule character-range-named
+    (and "[:" (+ character-range-name-constituent) ":]")
+  (:destructure (open characters close)
+    (declare (ignore open close))
+   (named-range (coerce characters 'string))))
+
 (esrap:defrule character-range-character
-    (not (or (or "-" "]" "[" "\\"))))
+    (not (or "-" "]" "[" "\\")))
 
 (esrap:defrule character-range-range
     (and character-range-character "-" character-range-character)
@@ -145,7 +153,9 @@ number; the maximum of ~d is less than the minimum of ~d." max min)
 
 (esrap:defrule character-range
     (and "[" (esrap:? "¬")
-         (* (or character-range-range character-range-single))
+         (* (or character-range-named
+                character-range-range
+                character-range-single))
          "]")
   (:destructure (left invert ranges right)
     (declare (ignore left right))
