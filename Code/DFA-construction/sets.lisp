@@ -184,4 +184,4 @@
                     do (assert (= c +universal-class-set+))
                     and collect (if (= (1+ s) e)
                                     `(= ,s ,variable)
-                                    `(<= ,s ,variable (1- ,e))))))))
+                                    `(<= ,s ,variable ,(1- e))))))))

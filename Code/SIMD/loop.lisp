@@ -29,13 +29,14 @@
               (re-empty-p next-expression)
               (not (eq next-state previous-state))
               (not (assignments-idempotent-p
-                    (transition-tags-to-set transition))))
+                    (transition-tags-to-set transition)))
+              (csum-has-classes-p (transition-class transition)))
       (return-from transition-code (call-next-method)))
     ;; Try to skip to the first character after for which this transition doesn't apply.
     (let* ((vector-length (/ one-more-re-nightmare.vector-primops:+v-length+ *bits*)))
       (trivia:ematch
           (test-from-isum 'loaded
-                          (set-inverse (transition-class transition)))
+                          (csum-complement (transition-class transition)))
         (:never (call-next-method))
         (:always (error "Found a transition that is never taken."))
         (test

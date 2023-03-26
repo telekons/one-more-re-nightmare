@@ -57,7 +57,6 @@
                      *code-cache*)
             (cons function groups)))))
 
-(declaim (ftype (function (string) t) string-type-of))
 (defun string-type-of (string)
   (loop for type in *string-types*
         when (typep string type)

@@ -8,7 +8,7 @@
             (make-symbol (format nil "BROADCAST-~d" value)))))
 
 (defun test-from-isum (variable isum)
-  (translate-scalar-code variable (make-test-form isum variable '<= '=)))
+  (translate-scalar-code variable (make-test-form isum variable)))
 
 (defun code-from-prefix (prefix)
   (assert (not (null prefix)) () "Why /even bother/ with a zero-length prefix?")
