@@ -99,8 +99,8 @@
     (declare (ignore comma))
     (assert (or (null max) (null min) (> max min))
             (max min)
-            "The maximum repetition count should not be less than the minimum ~
-number; the maximum of ~d is less than the minimum of ~d." max min)
+            "The maximum repetition count ~d cannot be less than the minimum count ~d."
+            max min)
     (cons (or min 0) max)))
 
 (esrap:defrule repetition
@@ -162,8 +162,11 @@ number; the maximum of ~d is less than the minimum of ~d." max min)
     (declare (ignore open close))
    (named-range (coerce characters 'string))))
 
+(esrap:defrule character-range-character
+    (or character-range-escaped-constituent (not (or "-" "]" "[" "\\"))))
+
 (esrap:defrule character-range-single
-    (or character-range-escaped-constituent (not (or "-" "]" "[" "\\")))
+    character-range-character
   (:lambda (character)
     (singleton-set (char-code character))))
 
