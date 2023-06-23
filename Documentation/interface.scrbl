@@ -32,7 +32,7 @@ intersections of regular expressions.
 @rule["r" "<empty range>" "empty range"
           "cr" "single character"
           "c-cr" "character range"
-          "[:<name>:r]" "character class"]
+          "[:<name>:]r" "character class"]
 @rule["j" "<integer>" "bound"
           "<empty string>" "no bound"]
 @rule["c" "<single character>" ""]
