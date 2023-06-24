@@ -2,10 +2,10 @@
 
 (defvar *table-names* '())
 
-(defmacro define-hash-consing-table (name)
+(defmacro define-hash-consing-table (name &optional (test 'equal) (hash 'sxhash))
   `(progn
      (defvar ,name)
-     (pushnew ',name *table-names*)
+     (pushnew '(,name ,test ,hash) *table-names*)
      ',name))
 
 (defconstant +uncomputed+ '+uncomputed+)
@@ -18,7 +18,9 @@
    (%has-tags-p :initform +uncomputed+ :accessor cached-has-tags-p)))
 
 (defmacro define-types (&body types)
-  (loop for (name . slots) in types
+  (loop for ((name . slots) test* hash*) in types
+        for test = (or test* 'equal)
+        for hash = (or hash* 'sxhash)
         collect (let ((variables (loop for slot in slots collect (gensym (symbol-name slot))))
                       (internal-creator (alexandria:format-symbol t "%~a" name))
                       (table-name (alexandria:format-symbol '#:one-more-re-nightmare
@@ -32,14 +34,13 @@
                                ,@(loop for slot in slots
                                        for variable in variables
                                        appending `((list 'slot-value instance-name '',slot) ,variable)))))
-                     (define-hash-consing-table ,table-name)
+                     (define-hash-consing-table ,table-name ,test ,hash)
                      (defun ,internal-creator ,slots
-                       (or (gethash (list ,@slots) ,table-name)
+                       (or (lookup-hc ,table-name (list ,@slots))
                            (let ((instance (make-instance ',name)))
                              ,@(loop for slot in slots
                                      collect `(setf (slot-value instance ',slot) ,slot))
-                             (setf (gethash (list ,@slots) ,table-name)
-                                   instance))))))
+                             (insert-hc ,table-name (list ,@slots) instance))))))
           into forms
         finally (return `(progn ,@forms))))
 
@@ -58,7 +59,7 @@
                    collect `((list ,@pattern) ,replacement))
            ,@(loop for ((nil . pattern) (nil . replacement)) in hash-cons
                    collect `((list ,@pattern)
-                             (or (gethash (list ,@replacement) ,table-name)
+                             (or (lookup-hc ,table-name (list ,@replacement))
                                  (trivia.next:next))))
            (_ (,internal-creator ,@slots)))))))
 (indent:define-indentation define-type (4 &body))
@@ -67,11 +68,10 @@
   (alexandria:once-only (table key)
     (alexandria:with-gensyms (value present?)
       `(multiple-value-bind (,value ,present?)
-           (gethash ,key ,table)
+           (lookup-hc ,table ,key)
          (if ,present?
              ,value
-             (setf (gethash ,key ,table)
-                   (progn ,@body)))))))
+             (insert-hc ,table ,key (progn ,@body)))))))
 
 (defmacro with-slot-consing ((accessor object &key (when 't)) &body body)
   (alexandria:once-only (object)
@@ -89,11 +89,11 @@
               ,value)))))))
 
 (defmacro with-hash-consing-tables (() &body body)
-  `(let ,(loop for name in *table-names*
-               collect `(,name (make-hash-table :test 'equal)))
+  `(let ,(loop for (name test hash) in *table-names*
+               collect `(,name (make-hash-cons-table #',test #',hash)))
      ,@body))
 
 (defmacro clear-global-tables ()
   "Set up global tables for testing."
-  `(setf ,@(loop for name in *table-names*
-                 append `(,name (make-hash-table :test 'equal)))))
+  `(setf ,@(loop for (name test hash) in *table-names*
+                 append `(,name (make-hash-cons-table #',test #',hash)))))

@@ -11,6 +11,7 @@
                (:module "DFA-construction"
                 :components ((:file "type")
                              (:file "sets")
+                             (:file "hash-cons")
                              (:file "re-types")
                              (:file "nullable")
                              (:file "tag-sets")
