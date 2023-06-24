@@ -14,19 +14,18 @@
 
 (define-rewrites (literal set)
   :printer ((literal set)
-            (print-isum set stream)))
+            (print-csum set stream)))
 
 (defun kleene (r)
   (repeat r 0 nil nil))
 (trivia:defpattern kleene (r)
   `(repeat ,r 0 nil nil))
 
-(defun empty-set ()
-  (literal (symbol-set)))
+(defun empty-set () (literal +empty-set+))
 (trivia:defpattern empty-set ()
   (alexandria:with-gensyms (set)
     `(trivia:guard (literal ,set)
-                   (set-null ,set))))
+                   (csum-null-p ,set))))
 
 (defun universal-set ()
   (repeat (literal +universal-set+) 0 nil nil))
@@ -94,7 +93,7 @@
              ((either (empty-set) r) r)
              ((either r (empty-set)) r)
              ((either (literal s1) (literal s2))
-              (literal (set-union s1 s2)))
+              (literal (csum-union s1 s2)))
              ((either r (universal-set))
               (if (has-tags-p r)
                   (trivia.next:next)    ; Preserve tags then
@@ -144,7 +143,7 @@
              ((both (empty-string) (tag-set s))
               (tag-set s))
              ((both (literal s1) (literal s2))
-              (literal (set-intersection s1 s2))))
+              (literal (csum-intersection s1 s2))))
   :printer ((both r s)
             (format stream "(~a) ∩ (~a)" r s)))
 (define-rewrites (invert r)
@@ -186,7 +185,7 @@
 (defun text (vector)
   (reduce #'join (map 'vector
                       (lambda (e)
-                        (literal (symbol-set (char-code e))))
+                        (literal (singleton-set (char-code e))))
                       vector)
           :initial-value (empty-string) 
           :from-end t))

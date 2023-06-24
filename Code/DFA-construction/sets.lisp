@@ -1,198 +1,208 @@
 (in-package :one-more-re-nightmare)
 
-;;; Gilbert Baumann's isum.lisp
+;;;; Character sums
+;;; Character sums (csums) represent a set of characters as
+;;; a combination of ranges and "symbolic" classes (such as
+;;; [:alpha:], [:digit:], etc). Their implementation is somewhat
+;;; similar to Gilbert Baumann's "isum" integer sums, used
+;;; in clex2 and earlier versions of one-more-re-nightmare.
 
-;; MAKE-TEST-FORM
+;;; Class sets
+;; A class set is an element of ℙ(ℙ(classes)) i.e. a set of sets
+;; of character classes that are part of a range.
 
-;; To support large character sets, we need an implemention of a set of
-;; characters. Traditional scanner generators would at some place just
-;; enumerate the alphabet \Sigma, which is not feasible with large character
-;; sets like Unicode.
+;; This gets normalised to P on SBCL, but it looks pretty.
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun ℙ (x) (expt 2 x)))
+(alexandria:define-constant +classes+
+    '((:alpha alpha-char-p) (:digit digit-char-p) (:lower lower-case-p) (:upper upper-case-p))
+  :test 'equal)
+(defconstant +empty-class-set+ 0)
+(defconstant +class-set-bits+ (ℙ (length +classes+)))
+(defconstant +universal-class-set+ (1- (ℙ (ℙ (length +classes+)))))
+(defun class-set-complement (c) (logxor #xFFFF c))
 
-;; We handle all transitions in the automaton as a set of of the codes of
-;; characters, expressed by an ISUM. The representation of such a set is
-;; best defined by the ISUM-MEMBER function, but here is an overview to get
-;; the idea:
+;;; Character sets
+;; A character set is a union of intersections of character ranges
+;; and class sets. A character set has the form ((class-set start end) ...)
+;; with the first start fixed to 0 and the last end fixed to *CODE-LIMIT*.
 
-;;     ()           is the empty set
-;;     (a b)        is the set [a, b)
-;;     (a b c d)    is the set [a, b) u [c, d)
-;;     (nil)        is everything
-;;     (nil a b)    is everything but [a, b)
+(defvar *code-limit* char-code-limit)
+(define-symbol-macro +empty-set+ (list (list +empty-class-set+ 0 char-code-limit)))
+(define-symbol-macro +universal-set+ (list (list +universal-class-set+ 0 char-code-limit)))
+(defun range (start limit)
+  "The character set for [START, LIMIT)"
+  (list (list +empty-class-set+ 0 start)
+        (list +universal-class-set+ start limit)
+        (list +empty-class-set+ limit *code-limit*)))
+(defun singleton-set (x) (range x (1+ x)))
+(defun class-set (class)
+  (let ((p (position class +classes+ :key #'first)))
+    (when (null p) (error "No class named ~S" class))
+    (loop for i below +class-set-bits+
+          when (logbitp p i)
+            sum (ash 1 i) into class-set
+          finally (return (list (list class-set 0 *code-limit*))))))
+(defun remove-empty-ranges (csum)
+  (remove 0 csum :key #'first))
 
-;; An ISUM is a sequence of stricly monotonic increasing integers. The idea
-;; is that when you sweep a pointer over the list at each element found the
-;; membership in the set changes. Like (1 10 12 15). You start outside the
-;; set, find 1 and say "above or equal 1 is in the set" and then find 10 and
-;; say "above or equal 10 is not in the set" and so on. This way it is very
-;; easy to implement Boolean operations on sets.
+(defun print-csum (csum stream)
+  (cond
+    ((equal csum +empty-set+) (write-string "[]" stream))
+    ((equal csum +universal-set+) (write-string "Σ" stream))
+    (t (let ((csum (remove-empty-ranges csum)))
+         (if (and (alexandria:length= 1 csum) (= (first (first csum)) +universal-class-set+))
+             (if (= (1+ (second (first csum))) (third (first csum)))
+                 (write-char (code-char (second (first csum))) stream)
+                 (format stream "[~c-~c]"
+                         (code-char (second (first csum)))
+                         (code-char (1- (third (first csum))))))
+             (format stream "[~s]" csum))))))
 
-(alexandria:define-constant +empty-set+ '() :test 'equal)
-(alexandria:define-constant +universal-set+ '(nil) :test 'equal)
+;;; Operations on character sets
 
-(defun singleton-set (x)
-  "Returns the ISUM, that contains only /x/."
-  (list x (1+ x)))
+(defun coalesce-csum (cset)
+  "Coalesce adjacent ranges with the same class set in a character set."
+  (loop until (null cset)
+        collect (let* ((f (first cset))
+                       (l (member (first f) (rest cset) :key #'first :test #'/=)))
+                  (setf cset l)
+                  (if (null l)
+                      (list (first f) (second f) *code-limit*)
+                      (list (first f) (second f) (second (first l)))))))
 
-(defun symbol-range (from below)
-  "Returns the ISUM, that contains every code point that is in [from, below)"
-  (list from below))
+;; A set table is a list of lists of values, and a list of ranges.
+;; We ensure that ranges line up by only storing the ranges
+;; once.
+(defun align-csums (csets)
+  "Align the ranges in a list of character sets, returning a list of lists of values, and a list of ranges."
+  (labels ((align (csets values ranges start)
+             (if (null (first csets))
+                 (values (reverse values) (reverse ranges))
+                 (let ((end (reduce #'min csets :key (lambda (c) (third (first c))))))
+                   ;; Take a step.
+                   (align
+                    (loop for c in csets
+                          collect (if (= (third (first c)) end) (rest c) c))
+                    (cons (loop for c in csets collect (first (first c))) values)
+                    (cons (list start end) ranges)
+                    end)))))
+    (align csets '() '() 0)))
 
-;;; Boolean operation on ISUMs
+(defmacro define-csum-op (name class-op arguments)
+  `(defun ,name ,arguments
+     (multiple-value-bind (values ranges)
+         (align-csums (list ,@arguments))
+       (coalesce-csum
+        (mapcar (lambda (v r) (cons (apply #',class-op v) r))
+                values ranges)))))
 
-(defmacro isum-op (op A B)
-  "Combine the sets A and B by the Boolean operator op, which should be a
-valid argument to the BOOLE function. An integer x is member of the
-resulting set iff
-     (logbitp 0 (boole op (if (isum-member x A) 1 0) (if (isum-member x B) 1 0)))
- is non-NIL. That way e.g. boole-ior denotes the union."
-  `(let ((A ,A)
-         (B ,B))
-     (let* ((Ain 0)
-            (Bin 0)
-            (Cin 0)
-            (s nil)
-            (res (cons nil nil))
-            (resf res))
-       ;; Get rid of an initial NIL, which indicates a complemented set.
-       (when (and A (null (car A)))
-         (pop A) (setq Ain (- 1 Ain)))
-       (when (and B (null (car B)))
-         (pop B) (setq Bin (- 1 Bin)))
-       ;; Now traverse A and B in parallel and generate the resulting sequence.
-       (loop
-         (when (/= Cin (ldb (byte 1 0) (boole ,op Ain Bin)))
-           (setf resf (setf (cdr resf) (cons s nil)))
-           (setf Cin (- 1 Cin)))
-         (cond ((null A)
-                (cond ((null B)
-                       (return))
-                      (t
-                       (setq s (pop B))
-                       (setq Bin (- 1 Bin)))))
-               ((null B)
-                (setq s (pop A)) (setq Ain (- 1 Ain)))
-               ((< (car A) (car B))
-                (setq s (pop A)) (setq Ain (- 1 Ain)))
-               ((< (car B) (car A))
-                (setq s (pop B)) (setq Bin (- 1 Bin)))
+(define-csum-op csum-union logior (a b))
+(define-csum-op csum-intersection logand (a b))
+(define-csum-op csum-complement class-set-complement (a))
+(define-csum-op csum-difference logandc2 (a b))
+(defun csum-null-p (csum) (equal csum +empty-set+))
+
+;;; Character set dispatch
+;; This could have element type (UNSIGNED-BYTE 4) but that'd take
+;; more effort to decode; so we go with bytes.
+;; Rhetorical question: Are there any other ways to compress this
+;; table?
+(alexandria:define-constant +character-class-table+
+    (let ((table
+            (make-array char-code-limit
+                        :element-type '(unsigned-byte 8)
+                        :initial-element 0)))
+      (dotimes (i char-code-limit table)
+        (let ((character (code-char i)))
+          (unless (null character)
+            (loop for (nil predicate) in +classes+
+                  for x = 1 then (ash x 1)
+                  do (when (funcall predicate (code-char i))
+                       (setf (aref table i) (logior x (aref table i)))))))))
+  :test 'equalp)
+(declaim (inline lookup-class))
+(defun lookup-class (code)
+  (aref +character-class-table+ code))
+
+(defmacro csum-case (var less-than equal &body cases)
+  (labels ((dispatch-classes (values)
+             (if (alexandria:length= 1 values)
+                 `(progn ,@(cdar values))
+                 (alexandria:with-gensyms (result)
+                   `(let ((,result (lookup-class ,var)))
+                      (cond
+                        ,@(loop for (class-set . body) in values
+                                collect `(,(if (= +universal-class-set+ class-set)
+                                               't
+                                               `(logbitp ,result ,class-set))
+                                          ,@body)))))))
+           (singleton-p (range) (= (1+ (first range)) (second range)))
+           (middle (list) (butlast (rest list)))
+           (dispatch-csums (values ranges)
+             (cond
+               ((alexandria:length= 1 ranges)
+                ;; There's only one more range, so dispatch on classes.
+                (dispatch-classes (first values)))
+               ;; Detect singleton sets to use = on, e.g. [^ab], a and b.
+               ((and (equal (first values) (first (last values)))
+                     (every #'singleton-p (middle ranges)))
+                `(cond
+                   ,@(loop for r in (middle ranges)
+                           for v in (middle values)
+                           collect `((,equal ,var ,(first r)) ,(dispatch-classes v)))
+                   (t ,(dispatch-classes (first values)))))
+               ;; Bisect and continue dispatching.
                (t
-                (setq s (pop A)) (setq Ain (- 1 Ain))
-                (pop B) (setq Bin (- 1 Bin)))))
-       (cdr res))))
+                (let* ((mid (floor (length values) 2)))
+                  `(if (,less-than ,var ,(first (nth mid ranges)))
+                       ,(dispatch-csums (subseq values 0 mid)
+                                        (subseq ranges 0 mid))
+                       ,(dispatch-csums (subseq values mid)
+                                        (subseq ranges mid))))))))
+    (multiple-value-bind (values ranges)
+        (align-csums
+         (loop for (csum . body) in cases
+               collect (loop for (cl s e) in csum
+                             collect `((,cl . ,body) ,s ,e))))
+      ;; Remove unreachable values from the set table.
+      (let ((values (mapcar #'remove-empty-ranges values)))
+        (dispatch-csums values ranges)))))
 
-;; Now we could define interesting set operations in terms of ISUM-OP.
+(defun csum-has-classes-p (csum)
+  "Does a character sum use any non-trivial character classes?"
+  (loop for (c s e) in csum
+        thereis (and (/= c +empty-class-set+) (/= c +universal-class-set+))))
 
-(defun set-union (a b)             (isum-op boole-ior a b))
-(defun set-intersection (a b)      (isum-op boole-and a b))
-(defun symbol-set-difference (a b) (isum-op boole-andc2 a b))
-(defun set-inverse (a)             (isum-op boole-c1 a nil))
-(defun set-null (isum)             (null isum))
+(defun make-test-form (csum variable)
+  "Compute a form which tests if VARIABLE is an element of CSUM, using OR, <= and ="
+  (cond
+    ((equal csum +empty-set+) 'nil)
+    ((equal csum +universal-set+) 't)
+    (t
+     `(or ,@(loop for (c s e) in csum
+                  unless (= c +empty-class-set+)
+                    do (assert (= c +universal-class-set+))
+                    and collect (if (= (1+ s) e)
+                                    `(= ,s ,variable)
+                                    `(<= ,s ,variable ,(1- e))))))))
 
-(defun symbol-set (&rest symbols)
-  (reduce #'set-union symbols :key #'singleton-set :initial-value +empty-set+))
+;;; Named sets
 
-(trivia:defpattern single-isum-case (a next)
-  (alexandria:with-gensyms (succ)
-    `(trivia:guard (list* ,a ,succ ,next)
-                   (= ,succ (1+ ,a)))))
-
-(defun fold-or (form next)
-  "Manually constant fold out (OR A NIL) to A. The compiler can do this, but generated code looks nicer with folding."
-  (if (eql next 'nil)
-      form
-      `(or ,form ,next)))
-
-(defun make-test-form (isum variable less-or-equal equal)
-  (trivia:ematch isum
-    ('() 'nil)
-    ((list* nil next)
-     (trivia:match (make-test-form next variable less-or-equal equal)
-       ('nil 't)
-       (form `(not ,form))))
-    ((single-isum-case a next)
-     (fold-or `(,equal ,a ,variable)
-              (make-test-form next variable less-or-equal equal)))
-    ((list* low high next)
-     (fold-or `(,less-or-equal ,low ,variable ,(1- high))
-              (make-test-form next variable less-or-equal equal)))))
-
-(defun print-isum (isum stream)
-  (labels ((print-union (rest)
-             (trivia:ematch rest
-               ('())
-               ((single-isum-case a next)
-                (write-char (code-char a) stream)
-                (print-union next))
-               ((list* a b next)
-                (format stream "~c-~c" (code-char a) (code-char (1- b)))
-                (print-union next)))))
-    (trivia:ematch isum
-      ('() (write-string "ø" stream))
-      ((single-isum-case a 'nil)
-       (write-char (code-char a) stream))
-      ((list* 'nil (single-isum-case a 'nil))
-       (format stream "[¬~c]" (code-char a)))
-      ((list* nil rest)
-       (write-string "[¬" stream)
-       (print-union rest)
-       (write-string "]" stream))
-      (_
-       (write-string "[" stream)
-       (print-union isum)
-       (write-string "]" stream)))))
-
-(defmacro isum-case (var less-than equal &body clauses)
-  ;; A variation on the theme, actually this is of more general use, since
-  ;; Common Lisp implementations lack a jump table based implementation of
-  ;; CASE.
-  (let* ((last-out nil)
-         (res '())
-         (default (find nil clauses :key #'caar))
-         (clauses (remove default clauses))
-         (clauses (mapcar (lambda (clause)
-                            (cond ((integerp (car clause))
-                                   (cons (list (car clause) (1+ (car clause)))
-                                         (cdr clause)))
-                                  (t clause)))
-                          clauses)))
-    (assert (every #'evenp (mapcar #'length (mapcar #'car clauses)))
-            ()
-            "Multiple negative ISUMs in dispatch?")
-    (loop
-      (when (every #'null (mapcar #'car clauses))
-        (return))
-      (let ((pivot (reduce #'min (remove nil (mapcar #'caar clauses)))))
-        (setf clauses (mapcar (lambda (y)
-                                (if (eql (caar y) pivot) (cons (cdar y) (cdr y)) y))
-                              clauses))
-        (let ((out (or (find-if (lambda (y) (oddp (length (car y)))) clauses)
-                       default)))
-          (unless (equal (cdr out) last-out)
-            (push pivot res)
-            (push (if (null (cddr out)) (cadr out) `(progn ,@(cdr out)))
-                  res)
-            (setf last-out (cdr out))))))
-    (labels ((cons-if (cond cons alt)
-               (cond ((null cons) `(unless ,cond ,alt))
-                     ((null alt)  `(when ,cond ,cons))
-                     (t           `(if ,cond ,cons ,alt))))
-             (cons-progn (x)
-               (if (null (cdr x))
-                   (car x)
-                   `(progn ,@x)))
-             (foo (xs default)
-               (cond ((null xs) default)
-                     ;; Check for a singleton set.
-                     ((and (= 4 (length xs))
-                           (= (1+ (first xs)) (third xs))
-                           (eq (fourth xs) default))
-                      (cons-if `(,equal ,var ,(first xs)) (second xs) (fourth xs)))
-                     ((= 2 (length xs))
-                      (cons-if `(,less-than ,var ,(first xs)) default (second xs)))
-                     (t
-                      (let ((p (* 2 (floor (length xs) 4))))
-                        (cons-if `(,less-than ,var ,(elt xs p))
-                                 (foo (subseq xs 0 p) default)
-                                 (foo (subseq xs (+ 2 p)) (elt xs (1+ p)))))))))
-      (foo (reverse res) (cons-progn (cdr default))))))
+(defun named-range (name)
+  (labels ((∪ (&rest rest) (reduce #'csum-union rest))
+           (d (a b) (csum-intersection a (csum-complement b)))
+           (s (&rest rest) (reduce #'csum-union rest :key (alexandria:compose #'singleton-set #'char-code))))
+    (alexandria:eswitch (name :test 'string=)
+      ("alpha" (class-set :alpha))
+      ("alnum" (∪ (class-set :alpha) (class-set :digit)))
+      ("blank" (s #\Space #\Tab))
+      ("cntrl" (∪ (range 0 32) (singleton-set 127)))
+      ("digit" (class-set :digit))
+      ("graph" (csum-complement (∪ (named-range "cntrl") (s #\Space))))
+      ("lower" (class-set :lower))
+      ("print" (∪ (named-range "graph") (s #\Space)))
+      ("punct" (d (named-range "graph") (∪ (class-set :alpha) (class-set :digit))))
+      ("space" (∪ (singleton-set 11) (s #\Space #\Return #\Newline #\Tab)))
+      ("upper" (class-set :upper))
+      ("xdigit" (∪ (class-set "digit") (s #\A #\B #\C #\D #\E #\F #\a #\b #\c #\d #\e #\f))))))
