@@ -78,6 +78,11 @@
       (reverse result))))
             
 (defvar *probably-bad-limit* 1000)
+(define-condition exceeded-state-limit (error)
+  ()
+  (:report "Made too many states - either your regular expression is too complicated, or one-more-re-nightmare is broken.
+(Either way, you're not going to get this compiled any time soon.)"))
+
 (defun make-dfa-from-expressions (expressions)
   (let ((states (make-hash-table))
         (possibly-similar-states (make-hash-table))
@@ -94,8 +99,7 @@
       (loop
         (when (null work-list) (return))
         (when (> (hash-table-count states) *probably-bad-limit*)
-          (error "Made too many states - either your regular expression is too complicated, or one-more-re-nightmare is broken.
-(Either way, you're not going to get this compiled any time soon.)"))
+          (error 'exceeded-state-limit))
         (let* ((expression (pop work-list))
                (state (find-state expression)))
           (cond
