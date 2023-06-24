@@ -90,28 +90,28 @@
        (has-tags-p r))
       (_ nil))))
 
-(defun unique-tags (re)
+(defvar *allow-alpha* t)
+(defun map-tags (f re)
   ;; Return the same RE if we have no tags to replace.
-  (unless (has-tags-p re) (return-from unique-tags re))
+  (unless (has-tags-p re)
+    (return-from map-tags re))
   (trivia:match re
-    ((tag-set set)
-     ;; Abstraction breakage here: we can't ever reuse a
-     ;; TAG-SET by definition, so we don't try. One nasty case
-     ;; Regrind found slows down about 16x if you do the naive
-     ;; thing:
-     #+(or) (tag-set (unique-assignments set))
-     (let ((ts (make-instance 'tag-set)))
-       (setf (slot-value ts 'substitutions) (unique-assignments set)
-             (gethash (list set) *tag-set-table*) ts)))
-    ((either r s) (either (unique-tags r) (unique-tags s)))
-    ((both r s) (both (unique-tags r) (unique-tags s)))
-    ((join r s) (join (unique-tags r) (unique-tags s)))
-    ((invert r) (invert (unique-tags r)))
-    ((repeat r min max c) (repeat (unique-tags r) min max c))
+    ((tag-set set) (tag-set (funcall f set)))
+    ((either r s) (either (map-tags f r) (map-tags f s)))
+    ((both r s) (both (map-tags f r) (map-tags f s)))
+    ((join r s) (join (map-tags f r) (map-tags f s)))
+    ((invert r) (invert (map-tags f r)))
+    ((repeat r min max c) (repeat (map-tags f r) min max c))
     ((alpha r old-tags)
-     (unless (eq old-tags (empty-set))
+     (unless (or *allow-alpha* (eq old-tags (empty-set)))
        (error "Can't modify tags with history"))
-     (alpha (unique-tags r) (unique-tags old-tags)))
+     (alpha (map-tags f r)
+            (map-tags f old-tags)))
     ((grep r s)
-     (grep (unique-tags r) (unique-tags s)))
+     (grep (map-tags f r)
+           (map-tags f s)))
     (_ re)))
+
+(defun unique-tags (re)
+  (let ((*allow-alpha* nil))
+    (map-tags #'unique-assignments re)))
