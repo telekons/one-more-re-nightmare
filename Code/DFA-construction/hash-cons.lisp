@@ -7,7 +7,8 @@
 ;;; 2. The hash function used by SBCL behaves very poorly with
 ;;;    large substitution lists (as used by TAG-SET).
 
-(defconstant +buckets+ 4096)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defconstant +buckets+ 4096))
 
 (defstruct (hash-cons-table (:constructor make-hash-cons-table (test hash)))
   (buckets (make-array +buckets+ :initial-element '())

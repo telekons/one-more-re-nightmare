@@ -56,6 +56,8 @@
                  (:interpreted
                   (let ((sb-ext:*evaluator-mode* :interpret))
                     (eval form)))
+                 #-sbcl
+                 (:interpreted (eval form))
                  (:compiled
                   (compile nil form))
                  (:literal
