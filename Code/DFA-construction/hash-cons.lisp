@@ -8,7 +8,7 @@
 ;;;    large substitution lists (as used by TAG-SET).
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defconstant +buckets+ 4096))
+  (defconstant +buckets+ 256))
 
 (defstruct (hash-cons-table (:constructor make-hash-cons-table (test hash)))
   (buckets (make-array +buckets+ :initial-element '())
