@@ -205,3 +205,31 @@ always be bound to an index, and never @cl{nil}, because the first two
 registers designate the bounds of the entire match.
 
 }
+
+@subsection{"Made too many states - ..."}
+
+@definitions{
+@define-condition["exceeded-state-limit" "error"]
+}
+
+@definition-section["Explanation"]{
+
+The compiler generates a deterministic finite automaton, which may
+(in semi-rare cases) produce a number of states exponentially
+proportional to the complexity of the regular expression. Complements
+and intersections may produce doubly-exponential numbers of states.
+
+It is also possible, but hopefully more rare, that the compiler lacks
+rules to generate a finite number of states.
+
+}
+
+@definition-section["Examples"]{
+
+@cl{(compile-regular-expression "1[01]{9}")} signals the error "Made too
+many states - either your regular expression is too complicated, or
+one-more-re-nightmare is broken. (Either way, you're not going to get
+this compiled any time soon.)" In general, the regular expression
+@${\mathtt{1} \cdot \left\{ \mathtt{0}, \mathtt{1} \right\}^n} requires
+@${\mathcal{O}(2^n)} states.
+}
