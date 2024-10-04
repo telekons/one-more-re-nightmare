@@ -60,7 +60,7 @@
                              (list :label
                                    (format nil "~a ~a"
                                            (with-output-to-string (s)
-                                             (print-isum
+                                             (print-csum
                                               (transition-class transition)
                                               s))
                                            (trim-assignments-for-show

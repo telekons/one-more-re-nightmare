@@ -28,8 +28,8 @@
 ;; with the first start fixed to 0 and the last end fixed to *CODE-LIMIT*.
 
 (defvar *code-limit* char-code-limit)
-(define-symbol-macro +empty-set+ (list (list +empty-class-set+ 0 char-code-limit)))
-(define-symbol-macro +universal-set+ (list (list +universal-class-set+ 0 char-code-limit)))
+(define-symbol-macro +empty-set+ (list (list +empty-class-set+ 0 *code-limit*)))
+(define-symbol-macro +universal-set+ (list (list +universal-class-set+ 0 *code-limit*)))
 (defun range (start limit)
   "The character set for [START, LIMIT)"
   (list (list +empty-class-set+ 0 start)
@@ -47,17 +47,34 @@
   (remove 0 csum :key #'first))
 
 (defun print-csum (csum stream)
-  (cond
-    ((equal csum +empty-set+) (write-string "[]" stream))
-    ((equal csum +universal-set+) (write-string "Σ" stream))
-    (t (let ((csum (remove-empty-ranges csum)))
-         (if (and (alexandria:length= 1 csum) (= (first (first csum)) +universal-class-set+))
-             (if (= (1+ (second (first csum))) (third (first csum)))
-                 (write-char (code-char (second (first csum))) stream)
-                 (format stream "[~c-~c]"
-                         (code-char (second (first csum)))
-                         (code-char (1- (third (first csum))))))
-             (format stream "[~s]" csum))))))
+  (labels ((range (start end)
+             (if (= (1- end) start)
+                 (string (code-char start))
+                 (format nil "~C-~C" (code-char start) (code-char (1- end))))))
+    (trivia:match (remove-empty-ranges csum)
+      ('() (write-string "[]" stream))
+      ((equal +universal-set+) (write-string "Σ" stream))
+      ((list (list (= +universal-class-set+) start end))
+       (if (= (1- end) start)
+         (write-char (code-char start) stream)
+         (format stream "[~C-~C]" (code-char start) (code-char (1- end)))))
+      (pos-parts
+       (trivia:match (remove-empty-ranges (csum-complement csum))
+         ((list (list (= +universal-class-set+) start end))
+          (format stream "[¬~A]" (range start end)))
+         (neg-parts
+          (write-char #\[ stream)
+          (multiple-value-bind (negative? parts)
+              (if (> (length pos-parts) (length neg-parts))
+                  (values t neg-parts)
+                  (values nil pos-parts))
+            (when negative? (write-char #\¬ stream))
+            (loop for (classes start end) in parts
+                  if (= classes +universal-class-set+)
+                    do (write-string (range start end) stream)
+                  else
+                    do (write (list classes start end) :stream stream)))
+          (write-char #\] stream)))))))
 
 ;;; Operations on character sets
 
