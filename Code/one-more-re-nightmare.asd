@@ -35,5 +35,8 @@
   ;; Trivia emits warnings at compile-time that type-i can't infer
   ;; types for some patterns.
   :around-compile (lambda (thunk)
-                    (handler-bind ((type-i:failed-type-inference #'muffle-warning))
+                    (handler-bind ((warning
+                                     (lambda (c)
+                                       (when (typep c (find-symbol "FAILED-TYPE-INFERENCE" "TYPE-I"))
+                                         (muffle-warning)))))
                       (funcall thunk))))
