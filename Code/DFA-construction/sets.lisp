@@ -47,7 +47,6 @@
   (remove 0 csum :key #'first))
 
 (defun print-csum (csum stream)
-  #+sbcl (declare (sb-ext:muffle-conditions type-i:failed-type-inference))
   (labels ((range (start end)
              (if (= (1- end) start)
                  (string (code-char start))

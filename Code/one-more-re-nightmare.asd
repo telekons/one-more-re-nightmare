@@ -31,4 +31,9 @@
                              (:file "convert-to-bytes")
                              (:file "code-cache")
                              (:file "lint")
-                             (:file "interface")))))
+                             (:file "interface"))))
+  ;; Trivia emits warnings at compile-time that type-i can't infer
+  ;; types for some patterns.
+  :around-compile (lambda (thunk)
+                    (handler-bind ((type-i:failed-type-inference #'muffle-warning))
+                      (funcall thunk))))
