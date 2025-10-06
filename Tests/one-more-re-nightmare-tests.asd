@@ -2,7 +2,7 @@
   :author "Hayley Patton"
   :description "Tests for a regular expression compiler"
   :license "BSD 2-clause"
-  :depends-on (:parachute :one-more-re-nightmare :lparallel)
+  :depends-on (:parachute :one-more-re-nightmare :lparallel :cl-cpus)
   :serial t
   :components ((:file "package")
                (:file "tests")

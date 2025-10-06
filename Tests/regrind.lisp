@@ -40,8 +40,14 @@
       (setf (char haystack i) (code-char (+ 65 (random 26)))))
     haystack))
 
+(defun ensure-lparallel-kernel ()
+  (when (null lparallel:*kernel*)
+    (setf lparallel:*kernel*
+          (lparallel:make-kernel (cpus:get-number-of-processors)))))
+
 (defun regrind (n &key (depth 4))
   (let ((success t))
+    (ensure-lparallel-kernel)
     (lparallel:pdotimes (i n success n)
       (let* ((*remaining-depth* depth)
              #+sbcl (one-more-re-nightmare::*code-type* :interpreted)

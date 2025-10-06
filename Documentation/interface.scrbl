@@ -172,3 +172,14 @@ Compile a regular expression, returning an instance of
 
 An error is signalled if the expression has invalid syntax.
 }
+
+@definitions{
+@defvar["*state-limit*"]{1000}
+
+The maximum number of states which the compiler will generate.
+
+@define-condition["exceeded-state-limit"]{error}
+
+This error type is signalled when the compiler exceeds the limit on
+the number of states set by @cl{*state-limit*}.
+}

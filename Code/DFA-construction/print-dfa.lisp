@@ -3,13 +3,16 @@
 ;;; The DFA we are printing.
 (defvar *dfa*)
 (defvar *initial-state*)
+(defvar *print-state-names* t)
 
-(defun generate-dot-for-expression (expression)
+(defun generate-dot-for-expression (expression &key (search? t) (name-states? t))
   (uiop:with-temporary-file (:pathname p :stream s :keep t :type "dot")
     (with-hash-consing-tables ()
       (let* ((*tag-gensym-counter* 0)
+             (*print-state-names* name-states?)
+             (regex (parse-regular-expression expression))
              (initial-state
-               (make-search-machine (parse-regular-expression expression)))
+               (if search? (make-search-machine regex) regex))
              (dfa (make-dfa-from-expression initial-state)))
         (print-dfa dfa initial-state s)))
     p))
@@ -21,7 +24,7 @@
      (cl-dot:generate-graph-from-roots
       'dfa
       (list (gethash initial-state dfa))
-      '(:node (:fontname "Inconsolata" :shape :box)
+      `(:node (:fontname "Inconsolata" :shape ,(if *print-state-names* :box :circle))
         :edge (:fontname "Inconsolata")))
      :stream stream)))
 
@@ -36,10 +39,12 @@
   ;; trailing \l, which is necessary even when there isn't another
   ;; line break.
   (make-instance 'cl-dot:node
-   :attributes (list
-                :label (list :left (format nil "~A~%" (state-expression state)))
-                :style (if (eq (empty-set) (nullable (state-expression state)))
-                           :solid :bold))))
+    :attributes (append
+                 (if *print-state-names*
+                     (list :label (list :left (format nil "~A~%" (state-expression state))))
+                     '())
+                 (list :style (if (eq (empty-set) (nullable (state-expression state)))
+                                  :solid :bold)))))
 
 (defun trim-assignments-for-show (assignments)
   (let ((new-assignments
